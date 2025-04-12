@@ -20,7 +20,7 @@ class PreviewCanvas(tk.Canvas):
         Returns:
             None
         """
-        super().__init__(parent, width=width, height=height, bg="#FFFFFF", *args, **kwargs)
+        super().__init__(parent, width=width, height=height, *args, **kwargs)
 
         # Store parameters as attributes
         self._width = width
@@ -29,10 +29,15 @@ class PreviewCanvas(tk.Canvas):
         self._set_origin_center()
         self.grid(row=0, column=0, sticky="nsew")
 
+        # Pattern settings
         self.pattern = []
-        self.bg_color = "#FFFFFF"
         self.pattern_color = "#000000"
         self.pattern_linewidth = 1
+
+        # Workspace settings
+        self.bg_color = "#FFFFFF"
+        self.show_origin = True
+        self.origin_position = (1, 1)  # center
 
     def _set_origin_center(self):
         self._origin_x = self._width / 2
@@ -84,6 +89,10 @@ class PreviewCanvas(tk.Canvas):
                         element['x1'], element['y1'], element['x2'], element['y2'], self.pattern_color, self.pattern_linewidth
                     )
 
+        # Draw crosshair
+        if self.show_origin:
+            self._draw_crosshair(self.origin_position)
+
     def _mm_to_px(self, mm):
         """
         Convert millimeters to pixels.
@@ -95,6 +104,54 @@ class PreviewCanvas(tk.Canvas):
             Amount defined in pixels.
         """
         return mm * self._mm_to_px_ratio
+
+    def _draw_crosshair(self, position):
+        """
+        Draw a red crosshair on the canvas based on a 3x3 matrix position.
+
+        Arguments:
+            position (tuple): A tuple (i, j) where:
+                              i - the row index (0 to 2),
+                              j - the column index (0 to 2).
+        Returns;
+            None
+        """
+        # Clear the canvas before drawing the crosshair
+        self.delete("crosshair")
+
+        # Get the canvas width and height
+        canvas_width = self._width
+        canvas_height = self._height
+
+        # Ensure the position is valid
+        if not (0 <= position[0] <= 2 and 0 <= position[1] <= 2):
+            raise ValueError("Invalid position. Both i and j must be in the range 0 to 2.")
+
+        # Define the crosshair center positions
+        N_L = 2  # nudge crosshair N pixels from left edge
+        N_R = -1  # nudge crosshair N pixels from right edge
+        N_T = 2  # nudge crosshair N pixels from top edge
+        N_B = -1  # nudge crosshair N pixels from bottom edge
+        centers = {
+            (0, 0): (N_L, N_T),                                 # top-left
+            (0, 1): (canvas_width / 2, N_T),                    # top-middle
+            (0, 2): (canvas_width - N_R, N_T),                  # top-right
+            (1, 0): (N_L, canvas_height / 2),                   # center-left
+            (1, 1): (canvas_width / 2, canvas_height / 2),      # center
+            (1, 2): (canvas_width - N_R, canvas_height / 2),    # center-right
+            (2, 0): (N_L, canvas_height - N_B),                 # bottom-left
+            (2, 1): (canvas_width / 2, canvas_height - N_B),    # bottom-middle
+            (2, 2): (canvas_width - N_R, canvas_height - N_B),  # bottom-right
+        }
+
+        # Get the (x, y) coordinates for the specified position
+        x, y = centers[position]
+
+        # Draw horizontal line
+        self.create_line(x - 10, y, x + 10, y, fill="red", width=3, tags="crosshair")
+
+        # Draw vertical line
+        self.create_line(x, y - 10, x, y + 10, fill="red", width=3, tags="crosshair")
 
     def _draw_line(self, x1, y1, x2, y2, color, width):
         """
@@ -116,14 +173,7 @@ class PreviewCanvas(tk.Canvas):
         x2_px = self._origin_x + self._mm_to_px(x2)
         y2_px = self._origin_y - self._mm_to_px(y2)
 
-        self.create_line(
-            x1_px,
-            y1_px,
-            x2_px,
-            y2_px,
-            fill=color,
-            width=width
-        )
+        self.create_line(x1_px, y1_px, x2_px, y2_px, fill=color, width=width)
 
     def _draw_circle(self, x, y, radius, color, width):
         """

@@ -4,6 +4,7 @@ import numpy as np
 from user_controls import UserControlsPane
 from preview_canvas import PreviewCanvas
 from post_processor import GCodePostProcessor
+from settings_dialog import SettingsDialog
 
 
 class SpiroScribeApp(tk.Tk):
@@ -27,16 +28,19 @@ class SpiroScribeApp(tk.Tk):
         self.frame.grid_columnconfigure(0, weight=1)
         self.frame.grid(row=0, column=0, sticky="nsew")
 
+        self.settings_button = tk.Button(self.frame, text="Workspace Settings", command=self.open_settings_dialog)
+        self.settings_button.grid(row=0, column=0, padx=(10, 10), pady=(10, 5), sticky="e")
+
         self.canvas = PreviewCanvas(
             parent=self.frame,
             width=400,
             height=400,
             mm_to_px_ratio=15,
         )
-        self.canvas.grid(row=0, column=0, padx=(5, 5), pady=(5, 0), sticky="nsew")
+        self.canvas.grid(row=1, column=0, padx=(5, 5), pady=(5, 0), sticky="nsew")
 
         self.user_controls = UserControlsPane(self.frame)
-        self.user_controls.grid(row=1, column=0, padx=(5, 5), pady=(5, 5), sticky="nsew")
+        self.user_controls.grid(row=2, column=0, padx=(5, 5), pady=(5, 5), sticky="nsew")
         self.post_processor = GCodePostProcessor()
         self.circles = []
 
@@ -44,6 +48,21 @@ class SpiroScribeApp(tk.Tk):
         self.bind("<<BackgroundColorAction>>", self.handle_background_color_event)
         self.bind("<<PatternLinewidthAction>>", self.handle_pattern_lw_event)
         self.bind("<<UpdateCircleAction>>", self.handle_update_circle_event)
+
+        self.canvas.refresh_pattern()
+
+    def open_settings_dialog(self):
+        # Pass in initial values for the dialog
+        dialog = SettingsDialog(self,
+                                initial_color=self.canvas.bg_color,
+                                show_origin=self.canvas.show_origin,
+                                origin_position=self.canvas.origin_position
+                                )
+        settings = dialog.get_settings()
+        self.canvas.set_bg_color(settings['bg_color'])
+        self.canvas.show_origin = settings['show_origin']
+        self.canvas.origin_position = settings['origin_position']
+        self.canvas.refresh_pattern()
 
     def handle_background_color_event(self, event):
         """
