@@ -1,5 +1,6 @@
 import tkinter as tk
 import random
+import math
 import numpy as np
 from user_controls import UserControlsPane
 from preview_canvas import PreviewCanvas
@@ -48,7 +49,10 @@ class SpiroScribeApp(tk.Tk):
         self.bind("<<BackgroundColorAction>>", self.handle_background_color_event)
         self.bind("<<PatternLinewidthAction>>", self.handle_pattern_lw_event)
         self.bind("<<UpdateCircleAction>>", self.handle_update_circle_event)
+        self.bind("<<UpdateRouletteAction>>", self.handle_update_roulette_event)
 
+        # spiro = self.generate_random_spiro()
+        # self.canvas.set_pattern(spiro)
         self.canvas.refresh_pattern()
 
     def open_settings_dialog(self):
@@ -90,6 +94,37 @@ class SpiroScribeApp(tk.Tk):
         self.canvas.set_pattern(self.circles)
         self.canvas.refresh_pattern()
 
+    def handle_update_roulette_event(self, event):
+        """
+        Redraw the pattern on the canvas in response to a <<UpdateRouletteAction>>
+        event triggered by the widgets on the Roulette Settings tab.
+        """
+        self.roulette = event.widget.get_roulette_data()
+        self.canvas.set_pattern(self.roulette)
+        self.canvas.refresh_pattern()
+
+    def generate_random_spiro(self):
+        pattern = []
+
+        # Determine shape parameters.
+        R = random.randint(3, 6)   # radius of circle A (static)
+        r = random.randint(1, 6)    # radius of circle B (rolling)
+        s = random.choice([-1, 1])  # if s=1, B rolls on outside; if s=-1, B rolls on inside
+        d = random.randint(1, 6)   # pen distance from center of circle B
+        res = 200                   # resolution: number of linear segments per closed path
+
+        # Calculate number of turns needed to close path
+        n_turns = r / float(math.gcd(r, R + s * r))
+
+        points = []
+        for theta in np.arange(0, n_turns * 2 * np.pi, n_turns * 2 * np.pi / float(res)):
+            x = (R + s * r) * np.cos(theta) - s * d * np.cos(theta * (R + s * r) / float(r))
+            y = (R + s * r) * np.sin(theta) - d * np.sin(theta * (R + s * r) / float(r))
+            points.append((x, y))
+
+        pattern.append({'type': 'spiro', 'points': points})
+        return pattern
+
     def generate_random_circles(self):
         """
         Generate a random number of circles (between 3 and 12) in a circular pattern.
@@ -100,8 +135,8 @@ class SpiroScribeApp(tk.Tk):
         Returns:
             list (Dict): A list of drawing elements defined in mm.
         """
+        pattern = []
         num_circles = random.randint(3, 20)
-        circles = []
 
         radius = 6  # mm
         angles = np.linspace(0, 2 * np.pi, num_circles, endpoint=False)
@@ -109,9 +144,9 @@ class SpiroScribeApp(tk.Tk):
         for theta in angles:
             x = radius * np.cos(theta)
             y = radius * np.sin(theta)
-            circles.append({'type': 'circle', 'x': x, 'y': y, 'radius': radius})
+            pattern.append({'type': 'circle', 'x': x, 'y': y, 'radius': radius})
 
-        return circles
+        return pattern
 
 
 def center_window(window):

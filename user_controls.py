@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from circle_settings import CircleSettings
+from roulette_settings import RouletteSettings
 from workspace_settings import WorkspaceSettings
 
 
@@ -37,7 +38,10 @@ class UserControlsPane(tk.Frame):
 
         # Tab 3: Content for Tab 3
         tab3 = ttk.Frame(self.notebook)
-        self.notebook.add(tab3, text="Spirograph")
+        self.notebook.add(tab3, text="Roulettes")
+
+        roulette_settings = RouletteSettings(tab3)
+        roulette_settings.grid(row=0, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew")
 
 
 # Main application demonstrating how to embed the class in an application.

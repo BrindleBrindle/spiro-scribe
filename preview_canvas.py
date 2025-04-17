@@ -1,5 +1,8 @@
 import tkinter as tk
+import numpy as np
 import re
+import math
+from fractions import Fraction
 
 
 class PreviewCanvas(tk.Canvas):
@@ -88,6 +91,10 @@ class PreviewCanvas(tk.Canvas):
                     self._draw_line(
                         element['x1'], element['y1'], element['x2'], element['y2'], self.pattern_color, self.pattern_linewidth
                     )
+                elif element['type'] == 'roulette':
+                    self._draw_roulette(
+                        element['R'], element['r'], element['s'], element['d'], element['res'], self.pattern_color, self.pattern_linewidth
+                    )
 
         # Draw crosshair
         if self.show_origin:
@@ -152,6 +159,61 @@ class PreviewCanvas(tk.Canvas):
 
         # Draw vertical line
         self.create_line(x, y - 10, x, y + 10, fill="red", width=3, tags="crosshair")
+
+    def _draw_roulette(self, R, r, s, d, res, color, width):
+        """
+        Render a roulette on the canvas.
+
+        Arguments:
+            R (float): Radius of the fixed circle.
+            r (float): Radius of the rolling circle.
+            s (int): Scaling factor for the rolling circle radius, either -1 or 1.
+            d (float): Distance of the pen point from the rolling circle center.
+            res (int): Resolution of the curve (number of points).
+            color (str): The display color of the line (#FFF or #FFFFFF).
+            width (int): The display width of the line in px.
+
+        Returns:
+            None
+        """
+        def compute_point(theta):
+            """Helper function to compute the (x, y) point for a given theta."""
+            factor = (R + s * r)
+            x = factor * np.cos(theta) - s * d * np.cos(theta * factor / r)
+            y = factor * np.sin(theta) - d * np.sin(theta * factor / r)
+            return x, y
+
+        # Define R and r as Fractions
+        R = Fraction(R)
+        r = Fraction(r)
+
+        # Compute the effective radius
+        effective_R = R + s * r
+
+        # Compute the GCD of the numerators and denominators
+        numerator_gcd = math.gcd(r.numerator, effective_R.numerator)
+        denominator_lcm = (r.denominator * effective_R.denominator) // math.gcd(r.denominator, effective_R.denominator)
+
+        # Simplify the GCD as a fraction
+        gcd_fraction = Fraction(numerator_gcd, denominator_lcm)
+
+        # Calculate the number of turns needed to close the path.
+        n_turns = r / gcd_fraction
+        total_angle = n_turns * 2 * np.pi
+        thetas = np.linspace(0, total_angle, res, endpoint=False)
+
+        # Compute the starting point.
+        first_x, first_y = compute_point(thetas[0])
+        start_x, start_y = first_x, first_y
+
+        # Draw the curve by connecting consecutive points.
+        for theta in thetas[1:]:
+            end_x, end_y = compute_point(theta)
+            self._draw_line(start_x, start_y, end_x, end_y, color, width)
+            start_x, start_y = end_x, end_y
+
+        # Close the loop by connecting the last point to the first point.
+        self._draw_line(start_x, start_y, first_x, first_y, color, width)
 
     def _draw_line(self, x1, y1, x2, y2, color, width):
         """
