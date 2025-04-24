@@ -7,6 +7,7 @@ class RouletteSettings(tk.Frame):
         super().__init__(parent, *args, **kwargs)
 
         # Column and row headings
+        # column_headings = ["Enable", "Radius A", "Radius B", "Roll Side", "Pen Distance", "Resolution"]
         column_headings = ["Enable", "Radius A", "Radius B", "Roll Side", "Pen Distance"]
 
         # Create table headers
@@ -49,13 +50,27 @@ class RouletteSettings(tk.Frame):
         pen_distance_spinbox.grid(row=1, column=4, padx=5, pady=5)
         self.widgets.append(pen_distance_spinbox)
 
+        # # Slider for Resolution
+        # resolution_slider = tk.Scale(
+        #     self,
+        #     from_=100,  # minimum value
+        #     to=500,  # maximum value
+        #     orient="horizontal",  # horizontal slider
+        #     showvalue=False,
+        #     state="disabled",
+        #     length=80
+        # )
+        # resolution_slider.set(50)  # Set default value
+        # resolution_slider.grid(row=1, column=5, padx=5)
+        # self.widgets.append(resolution_slider)
+
     def toggle_widgets(self):
         """Enable or disable the widgets based on the state of the Checkbutton."""
         is_enabled = self.widgets[0].get()  # checkbutton state (BooleanVar)
 
         # Enable or disable the widgets
         for widget in self.widgets[1:]:  # skip the Checkbutton (first element)
-            if isinstance(widget, tk.Spinbox):  # handle Spinbox
+            if isinstance(widget, tk.Spinbox) or isinstance(widget, tk.Scale):  # handle Spinbox
                 state = "normal" if is_enabled else "disabled"
                 widget.config(state=state)
             elif isinstance(widget, ttk.Combobox):  # handle Combobox

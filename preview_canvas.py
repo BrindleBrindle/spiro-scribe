@@ -10,7 +10,7 @@ class PreviewCanvas(tk.Canvas):
     A canvas to display circular patterns, translating millimeter units into pixels.
     """
 
-    def __init__(self, parent, width=400, height=400, mm_to_px_ratio=10, *args, **kwargs):
+    def __init__(self, parent, width=400, height=400, mm_to_px_ratio=15, *args, **kwargs):
         """
         Initialize the PreviewCanvas object.
 
@@ -30,7 +30,6 @@ class PreviewCanvas(tk.Canvas):
         self._height = height
         self._mm_to_px_ratio = mm_to_px_ratio
         self._set_origin_center()
-        self.grid(row=0, column=0, sticky="nsew")
 
         # Pattern settings
         self.pattern = []

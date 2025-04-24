@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import ttk
 from circle_settings import CircleSettings
 from roulette_settings import RouletteSettings
-from workspace_settings import WorkspaceSettings
 
 
 class UserControlsPane(tk.Frame):
@@ -20,27 +19,27 @@ class UserControlsPane(tk.Frame):
         # Create tabs
         self.create_tabs()
 
+       # Bind the Notebook to remove focus whenever a new tab is selected
+        self.notebook.bind("<<NotebookTabChanged>>", self.set_focus_to_tab)
+
+    def set_focus_to_tab(tab, event=None):
+        """Remove focus from all widgets in tab."""
+        tab.focus()  # set focus to the tab (or another non-interactive widget)
+
     def create_tabs(self):
-        """Create three tabs and add them to the Notebook."""
-        # Tab 1: Content for Tab 1
+        """Create two tabs and add them to the Notebook."""
+        # Tab 1
         tab1 = ttk.Frame(self.notebook)
-        self.notebook.add(tab1, text="Workspace")
+        self.notebook.add(tab1, text="Simple Circles")
 
-        workspace_settings = WorkspaceSettings(tab1)
-        workspace_settings.grid(row=0, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew")
-
-        # Tab 2: Content for Tab 2
-        tab2 = ttk.Frame(self.notebook)
-        self.notebook.add(tab2, text="Simple Circles")
-
-        circle_settings = CircleSettings(tab2)
+        circle_settings = CircleSettings(tab1)
         circle_settings.grid(row=0, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew")
 
-        # Tab 3: Content for Tab 3
-        tab3 = ttk.Frame(self.notebook)
-        self.notebook.add(tab3, text="Roulettes")
+        # Tab 2
+        tab2 = ttk.Frame(self.notebook)
+        self.notebook.add(tab2, text="Roulettes")
 
-        roulette_settings = RouletteSettings(tab3)
+        roulette_settings = RouletteSettings(tab2)
         roulette_settings.grid(row=0, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew")
 
 
