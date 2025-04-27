@@ -25,7 +25,9 @@ class SpiroScribeApp(tk.Tk):
         super().__init__(*args, **kwargs)  # pass arguments to tk.Tk
 
         self.title("SpiroScribe")
-        self.resizable(False, False)  # prevent resizing in both width and height
+        self.resizable(False, False)  # prevent resizing (width and height)
+
+        self.origin_position = (2, 0)
 
         self.frame = tk.Frame(self)
         self.frame.grid(row=0, column=0, sticky="nsew")
@@ -40,7 +42,8 @@ class SpiroScribeApp(tk.Tk):
         self.export_svg_button = tk.Button(self.menu_frame, text="Export to SVG", command=self.open_export_svg_dialog)
         self.export_svg_button.grid(row=0, column=0, padx=(0, 5), sticky="nsew")
 
-        self.export_gcode_button = tk.Button(self.menu_frame, text="Export to G Code", command=self.open_export_gcode_dialog)
+        self.export_gcode_button = tk.Button(self.menu_frame, text="Export to G Code",
+                                             command=self.open_export_gcode_dialog)
         self.export_gcode_button.grid(row=0, column=1, padx=(5, 5), sticky="nsew")
 
         self.settings_button = tk.Button(self.menu_frame, text="Settings", command=self.open_settings_dialog)
@@ -98,13 +101,15 @@ class SpiroScribeApp(tk.Tk):
         self.canvas.show_origin = settings['show_origin']
         self.canvas.origin_position = settings['origin_position']
         self.canvas.refresh_pattern()
+        self.status_bar.origin_position = settings['origin_position']
 
     def open_info_dialog(self):
         text_list = [
             "A Celebration of Love and Friendship",  # heading
-            "This application was created in the spring of 2025 to engrave party favors for the wedding of A. Brindle and N. Saxena."
+            ("This application was created in the spring of 2025 to engrave party favors "
+             "for the wedding of A. Brindle and N. Saxena.")
             ]
-        dialog = InfoDialog(self, text_list)
+        InfoDialog(self, text_list)
 
     def handle_background_color_event(self, event):
         """

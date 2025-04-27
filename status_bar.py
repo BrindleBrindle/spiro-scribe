@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+
 
 class StatusBar(tk.Frame):
     def __init__(self, parent, canvas, width_mm=32, height_mm=32, width_px=400, *args, **kwargs):
@@ -8,10 +8,14 @@ class StatusBar(tk.Frame):
         # Configurable workspace dimensions (in mm)
         self.workspace_width = width_mm
         self.workspace_height = height_mm
+        self.width_px = width_px
+        self.height_px = width_px
         self.pixels_to_mm = self.workspace_width / float(width_px)
 
         # Create a main content area (just a blank area for cursor tracking)
         self.canvas = canvas
+        self.origin_position = canvas.origin_position
+        self.cursor_mapping = self.create_cursor_mapping()
         self.canvas.bind("<Motion>", self.update_cursor_position)  # track cursor movement
 
         # Create the status bar
@@ -27,7 +31,7 @@ class StatusBar(tk.Frame):
             fg="black",
             anchor="w"
         )
-        self.workspace_label.grid(row=0, column=0, sticky="w", padx=(5,5))
+        self.workspace_label.grid(row=0, column=0, sticky="w", padx=(5, 5))
 
         # Right-aligned cursor position label
         self.cursor_label = tk.Label(
@@ -35,14 +39,44 @@ class StatusBar(tk.Frame):
             text="(0.0, 0.0)",  # Default cursor position
             fg="black",
             anchor="e",
-            width=8
+            width=10
         )
-        self.cursor_label.grid(row=0, column=1, sticky="e", padx=(0,5))
+        self.cursor_label.grid(row=0, column=1, sticky="e", padx=(0, 5))
+
+    def create_cursor_mapping(self):
+        return {(0, 0): (1, -1, 0, 0),                                          # top-left
+                (0, 1): (1, -1, -self.width_px / 2.0, 0),                       # top-middle
+                (0, 2): (1, -1, -self.width_px, 0),                             # top-right
+                (1, 0): (1, -1, 0, self.height_px / 2.0),                       # center-left
+                (1, 1): (1, -1, -self.width_px / 2.0, self.height_px / 2.0),    # center
+                (1, 2): (1, -1, -self.width_px, self.height_px / 2.0),          # center-right
+                (2, 0): (1, -1, 0, self.height_px),                             # bottom-left
+                (2, 1): (1, -1, -self.width_px / 2.0, self.height_px),          # bottom-middle
+                (2, 2): (1, -1, -self.width_px, self.height_px)                 # bottom-right
+                }
 
     def update_cursor_position(self, event):
         """Update the cursor position label with current mouse coordinates."""
-        x, y = event.x * self.pixels_to_mm, event.y * self.pixels_to_mm
+
+        # Retrieve direction and offset parameters based on the currently-selected origin.
+        kx = self.cursor_mapping[self.origin_position][0]
+        ky = self.cursor_mapping[self.origin_position][1]
+        dx = self.cursor_mapping[self.origin_position][2]
+        dy = self.cursor_mapping[self.origin_position][3]
+
+        # Get the current pixel position of the cursor.
+        # Ensure it does not exceed the bounds of the canvas.
+        canvas_x = max(0, min(event.x, self.width_px))
+        canvas_y = max(0, min(event.y, self.height_px))
+
+        # Calculate the current XY position.
+        # Convert pixel position w.r.t canvas to mm position w.r.t. current workpiece origin.
+        x = self.pixels_to_mm * (kx * canvas_x + dx)
+        y = self.pixels_to_mm * (ky * canvas_y + dy)
+
+        # Update status bar label. Display one decimal place.
         self.cursor_label.config(text=f"({x:.1f}, {y:.1f})")
+
 
 # Create the main application window
 if __name__ == "__main__":

@@ -37,7 +37,7 @@ class PreviewCanvas(tk.Canvas):
         self.pattern_linewidth = 1
 
         # Workspace settings
-        self.bg_color = "#FFFFFF"
+        self.bg_color = "#FFFF80"
         self.show_origin = True
         self.origin_position = (1, 1)  # center
 
