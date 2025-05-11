@@ -1,6 +1,7 @@
 import tkinter as tk
 import random
 import math
+import os
 import numpy as np
 from user_controls import UserControlsPane
 from preview_canvas import PreviewCanvas
@@ -49,7 +50,8 @@ class SpiroScribeApp(tk.Tk):
         self.settings_button = tk.Button(self.menu_frame, text="Settings", command=self.open_settings_dialog)
         self.settings_button.grid(row=0, column=2, padx=(5, 5), sticky="nsw")
 
-        image = Image.open("info.png")
+        cwd = os.getcwd()
+        image = Image.open(cwd + "\\images\\" + "info.png")
         resized_image = image.resize((24, 24))  # resize to fit the button
         button_image = ImageTk.PhotoImage(resized_image)
         self.info_button = tk.Button(self.menu_frame, image=button_image, command=self.open_info_dialog)
