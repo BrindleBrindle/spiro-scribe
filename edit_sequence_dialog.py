@@ -1,8 +1,9 @@
 import tkinter as tk
+import standard_sequences as sseq
 
 
 class EditSequenceDialog(tk.Toplevel):
-    def __init__(self, parent, initial_content="", *args, **kwargs):
+    def __init__(self, parent, default_content="", initial_content="", *args, **kwargs):
         """
         Dialog to configure sequence text.
 
@@ -16,8 +17,9 @@ class EditSequenceDialog(tk.Toplevel):
         self.resizable(False, False)
         self.transient(parent)  # keep dialog on top of main window
 
-        # Store the passed-in initial values
-        self.content = initial_content
+        self.new_content = ""
+        self.default_content = default_content
+        self.initial_content = initial_content
 
         # Set window to delete itself when the cancel button is pressed.
         self.protocol("WM_DELETE_WINDOW", self.close)
@@ -33,7 +35,7 @@ class EditSequenceDialog(tk.Toplevel):
         self.main_frame.grid(row=0, column=0, padx=10, pady=5)
 
         # Multi-line Textbox with Scrollbar
-        self.textbox = tk.Text(self.main_frame, width=40, height=10, wrap=tk.WORD)
+        self.textbox = tk.Text(self.main_frame, width=70, height=10, wrap=tk.WORD)
         self.textbox.grid(row=0, column=0, sticky="nsew", pady=5)
 
         self.scrollbar = tk.Scrollbar(self.main_frame, orient=tk.VERTICAL, command=self.textbox.yview)
@@ -41,17 +43,20 @@ class EditSequenceDialog(tk.Toplevel):
 
         self.textbox.config(yscrollcommand=self.scrollbar.set)
 
-        # Set default text in the textbox
-        self.textbox.insert("1.0", self.content)
+        # Set starting text in the textbox
+        self.textbox.insert("1.0", self.initial_content)
 
         self.button_frame = tk.Frame(self.main_frame)
-        # self.button_frame.columnconfigure(0, weight=0)
         self.button_frame.columnconfigure(1, weight=1)
-        # self.button_frame.columnconfigure(2, weight=0)
         self.button_frame.grid(row=1, column=0, columnspan=2, pady=10, sticky="nsew")
 
         # Restore Default button
-        self.restore_button = tk.Button(self.button_frame, text="Restore Default", command=self.restore_default)
+        if self.initial_content == self.default_content:
+            restore_button_state = tk.DISABLED
+        else:
+            restore_button_state = tk.NORMAL
+        self.restore_button = tk.Button(self.button_frame, text="Restore Default",
+                                        state=restore_button_state, command=self.restore_default)
         self.restore_button.grid(row=0, column=0, padx=5, sticky="w")
 
         # Cancel button
@@ -62,7 +67,11 @@ class EditSequenceDialog(tk.Toplevel):
         self.ok_button = tk.Button(self.button_frame, text="OK", command=self.ok, default=tk.ACTIVE)
         self.ok_button.grid(row=0, column=2, padx=5, sticky="e")
 
-        # self.bind("<Return>", self.close)
+        # Bind the <<Modified>> event to the Text widget.
+        self.textbox.bind("<<Modified>>", self.on_text_change)
+
+        # Bind the <Return> event to the whole application.
+        self.bind("<Return>", self.ok)
 
         # Make dialog visible and set the widget that has focus.
         self.deiconify()
@@ -75,14 +84,39 @@ class EditSequenceDialog(tk.Toplevel):
         # Stop main script until dialog is dismissed.
         self.wait_window(self)
 
+    def on_text_change(self, event):
+        """
+        Re-enables the Restore Default button when the Text widget content is modified.
+        """
+        # Enable the button only if the content has been modified
+        if self.textbox.edit_modified():
+            self.restore_button.config(state=tk.NORMAL)
+            self.textbox.edit_modified(False)  # Reset the modified flag
+
     def restore_default(self):
-        pass
+        """
+        Restores the default content in the Text widget and disables the button.
+        """
+        # Reset the <<Modified>> event flag.
+        self.textbox.edit_modified(False)
 
-    def ok(self):
-        pass
+        # Update the Text widget contents.
+        self.textbox.delete("1.0", tk.END)
+        self.textbox.insert("1.0", self.default_content)
 
-    def cancel(self):
-        pass
+        # Disable the button.
+        self.restore_button.configure(state=tk.DISABLED)
+
+        # Ensure the modified flag is still reset.
+        self.textbox.edit_modified(False)
+
+    def ok(self, event=None):
+        self.new_content = self.textbox.get("1.0", tk.END).strip()
+        self.close()
+
+    def cancel(self, event=None):
+        self.new_content = self.initial_content
+        self.close()
 
     def close(self, event=None):
         """Return focus to the parent window and close."""
@@ -91,8 +125,10 @@ class EditSequenceDialog(tk.Toplevel):
         tk.Toplevel.destroy(self)
 
     def get_settings(self):
-        """Return the current content of the dialog."""
-        return self.content
+        """
+        Return the final content of the Text widget.
+        """
+        return self.new_content
 
 
 class DemoApp(tk.Tk):
@@ -107,9 +143,9 @@ class DemoApp(tk.Tk):
         open_dialog_button.pack(pady=50)
 
     def open_dialog(self):
-        # Pass in initial values for the dialog
-        test_content = "Lorem ipsum..."
-        dialog = EditSequenceDialog(self, initial_content=test_content)
+        test_init_content = "Hello!"
+        test_default_content = sseq.get_example_title("imperial")
+        dialog = EditSequenceDialog(self, default_content=test_default_content, initial_content=test_init_content)
         settings = dialog.get_settings()
         print(settings)
 

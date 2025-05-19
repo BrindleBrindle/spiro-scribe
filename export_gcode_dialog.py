@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
 
+import standard_sequences as sseq
 from edit_sequence_dialog import EditSequenceDialog
 
 
@@ -29,7 +30,36 @@ class ExportGCodeDialog(tk.Toplevel):
             self.geometry("+%d+%d" % (parent.winfo_rootx() + parent.winfo_width() / 2.0 - self.winfo_width() / 2.0,
                                       parent.winfo_rooty() + parent.winfo_height() / 2.0 - self.winfo_height() / 2.0))
 
-        # self.configure(bg="gray90")
+        self.defaults_in = {"units": "in",
+                            "safe_z": 0.25,
+                            "jog_feed_xyz": 8.0,
+                            "cut_feed_xy": 2.0,
+                            "cut_feed_z": 1.0,
+                            "depth_per_pass": 0.02,
+                            "num_passes": 1,
+                            "arc_res": 200
+                            }
+
+        self.defaults_mm = {"units": "mm",
+                            "safe_z": 6.35,
+                            "jog_feed_xyz": 200,
+                            "cut_feed_xy": 50,
+                            "cut_feed_z": 25,
+                            "depth_per_pass": 0.5,
+                            "num_passes": 1,
+                            "arc_res": 200
+                            }
+
+        self.label_values = {
+            "imperial": {
+                "length": "in",
+                "speed": "in/min",
+            },
+            "metric": {
+                "length": "mm",
+                "speed": "mm/min",
+            },
+        }
 
         # Create a frame for the main widgets
         self.main_frame = tk.Frame(self)
@@ -39,16 +69,24 @@ class ExportGCodeDialog(tk.Toplevel):
         self.toolpath_lf = ttk.LabelFrame(self.main_frame, text="Toolpath Parameters")
         self.toolpath_lf.grid(row=0, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
 
-        self.unit_var = tk.StringVar(value="in")
+        self.selected_units = tk.StringVar(value="imperial")
+        self.previous_units = self.selected_units.get()
         self.units_label = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Units")
-        self.units_button_in = tk.Radiobutton(self.toolpath_lf, text="in", anchor="w", variable=self.unit_var, value="in")
-        self.units_button_mm = tk.Radiobutton(self.toolpath_lf, text="mm", anchor="w", variable=self.unit_var, value="mm")
+        self.units_button_in = tk.Radiobutton(self.toolpath_lf, text="in", anchor="w", variable=self.selected_units,
+                                              value="imperial", command=self.on_units_selected)
+        self.units_button_mm = tk.Radiobutton(self.toolpath_lf, text="mm", anchor="w", variable=self.selected_units,
+                                              value="metric", command=self.on_units_selected)
         self.units_label.grid(row=0, column=0, padx=5, pady=5, sticky="e")
         self.units_button_in.grid(row=0, column=1, sticky="ew")
         self.units_button_mm.grid(row=0, column=2, sticky="ew")
 
+        # Register the validation function
+        validate_cmd = self.register(self.validate_float_input)
+
         self.safe_Z_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Safe Z Height")
-        self.safe_Z_entry = tk.Entry(self.toolpath_lf, text="")
+        self.safe_Z_var = tk.StringVar()
+        self.safe_Z_entry = tk.Entry(self.toolpath_lf, textvariable=self.safe_Z_var,
+                                     validate="key", validatecommand=(validate_cmd, "%P"))
         self.safe_Z_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in]")
         self.safe_Z_label_1.grid(row=1, column=0, padx=5, pady=5, sticky="w")
         self.safe_Z_entry.grid(row=1, column=1, columnspan=2, sticky="ew")
@@ -84,7 +122,8 @@ class ExportGCodeDialog(tk.Toplevel):
 
         self.num_passes_label = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Number of passes")
         self.num_passes_var = tk.StringVar(value=1)
-        self.num_passes_spinbox = tk.Spinbox(self.toolpath_lf, from_=1, to=10, increment=1, width=8, state="readonly", textvariable=self.num_passes_var)
+        self.num_passes_spinbox = tk.Spinbox(self.toolpath_lf, from_=1, to=10, increment=1, width=8, state="readonly",
+                                             textvariable=self.num_passes_var)
         self.num_passes_label.grid(row=6, column=0, padx=5, pady=5, sticky="w")
         self.num_passes_spinbox.grid(row=6, column=1, columnspan=2, sticky="w")
 
@@ -112,7 +151,8 @@ class ExportGCodeDialog(tk.Toplevel):
         self.add_comment_label = tk.Label(self.sequences_lf, anchor="w", text="Description (title comment)")
         self.add_comment_var = tk.BooleanVar(value=False)
         self.add_comment_checkbutton = tk.Checkbutton(self.sequences_lf, variable=self.add_comment_var)
-        self.edit_comment_button = tk.Button(self.sequences_lf, image=pencil_button_image, command=self.raise_edit_dialog)
+        self.edit_comment_button = tk.Button(self.sequences_lf, image=pencil_button_image,
+                                             command=lambda: self.raise_edit_dialog("title"))
 
         self.add_comment_label.grid(row=1, column=0, padx=(5, 0), pady=5, sticky="w")
         self.add_comment_checkbutton.grid(row=1, column=1, sticky="ew")
@@ -122,7 +162,8 @@ class ExportGCodeDialog(tk.Toplevel):
         self.add_header_label = tk.Label(self.sequences_lf, anchor="w", text="Start sequence (header)")
         self.add_header_var = tk.BooleanVar(value=False)
         self.add_header_checkbutton = tk.Checkbutton(self.sequences_lf, variable=self.add_header_var)
-        self.edit_header_button = tk.Button(self.sequences_lf, image=pencil_button_image, command=self.raise_edit_dialog)
+        self.edit_header_button = tk.Button(self.sequences_lf, image=pencil_button_image,
+                                            command=lambda: self.raise_edit_dialog("start"))
 
         self.add_header_label.grid(row=2, column=0, padx=(5, 0), pady=5, sticky="w")
         self.add_header_checkbutton.grid(row=2, column=1, sticky="ew")
@@ -132,7 +173,8 @@ class ExportGCodeDialog(tk.Toplevel):
         self.add_postscript_label = tk.Label(self.sequences_lf, anchor="w", text="End sequence (postscript)")
         self.add_postscript_var = tk.BooleanVar(value=False)
         self.add_postscript_checkbutton = tk.Checkbutton(self.sequences_lf, variable=self.add_postscript_var)
-        self.edit_postscript_button = tk.Button(self.sequences_lf, image=pencil_button_image, command=self.raise_edit_dialog)
+        self.edit_postscript_button = tk.Button(self.sequences_lf, image=pencil_button_image,
+                                                command=lambda: self.raise_edit_dialog("end"))
 
         self.add_postscript_label.grid(row=3, column=0, padx=(5, 0), pady=(5, 10), sticky="w")
         self.add_postscript_checkbutton.grid(row=3, column=1, pady=(5, 10), sticky="ew")
@@ -165,6 +207,11 @@ class ExportGCodeDialog(tk.Toplevel):
         self.export_button.grid(row=0, column=1, padx=5, pady=(5, 5), sticky="nse")
         self.bind("<Return>", self.close)
 
+        # Generate starting sequences
+        self.title_comment = sseq.get_example_title(self.selected_units.get())
+        self.start_sequence = sseq.get_start_sequence(self.selected_units.get())
+        self.end_sequence = sseq.get_end_sequence()
+
         # Make dialog visible and set the widget that has focus.
         self.deiconify()
         self.focus_set()
@@ -176,10 +223,101 @@ class ExportGCodeDialog(tk.Toplevel):
         # Stop main script until dialog is dismissed.
         self.wait_window(self)
 
-    def raise_edit_dialog(self):
-        # Pass in initial values for the dialog
-        test_content = "Lorem ipsum..."
-        dialog = EditSequenceDialog(self, initial_content=test_content)
+    def get_label(self, units, measure):
+        return self.label_values.get(units, {}).get(measure, "Unknown")
+
+    def convert_value(self, value, units):
+        """
+        Converts a value to the specified unit system.
+
+        Args:
+            value (float): The value in the current unit system.
+            units (str): The target unit system, either "metric" or "imperial".
+
+        Returns:
+            float: The converted value in the target unit system.
+        """
+        if units == "metric":
+            return (25.4 * value)
+        elif units == "imperial":
+            return (value / 25.4)
+        else:
+            raise ValueError("Invalid unit system. Use 'metric' or 'imperial'.")
+
+    def validate_float_input(self, new_value):
+        """
+        Validates the input to ensure it is a valid float number.
+
+        Args:
+            new_value (str): The current value of the Entry widget after the change.
+
+        Returns:
+            bool: True if the input is a valid float, a dash as the first character,
+                  or empty, False otherwise.
+        """
+        if new_value == "":  # Allow empty string (to enable deletion)
+            return True
+        if new_value == "-":  # Allow a single dash as the first character
+            return True
+        try:
+            float(new_value)  # Try to convert to float
+            return True
+        except ValueError:
+            return False  # Reject input if it's not a valid float
+
+    def round_float(self, value, N):
+        """
+        Rounds a float value to the specified number of decimal places.
+
+        Args:
+            value (float): Value to round.
+            N (int): Number of decimal places to use for rounding.
+
+        Returns:
+            float: The rounded value to N decimal places.
+        """
+        return round(value, N)
+
+    def on_units_selected(self):
+        """Callback method called when unit radio button is selected."""
+        units = self.selected_units.get()
+        units_changed = True if units != self.previous_units else False
+
+        # Update unit labels.
+        self.safe_Z_label_2["text"] = f"[{self.get_label(units, "length")}]"
+        self.jog_rate_label_2["text"] = f"[{self.get_label(units, "speed")}]"
+        self.cut_rate_XY_label_2["text"] = f"[{self.get_label(units, "speed")}]"
+        self.cut_rate_Z_label_2["text"] = f"[{self.get_label(units, "speed")}]"
+        self.depth_per_pass_label_2["text"] = f"[{self.get_label(units, "length")}]"
+
+        # Convert field values if unit system changed.
+        if units_changed:
+            safe_Z_entry = self.safe_Z_var.get()
+            if safe_Z_entry:
+                safe_Z = self.convert_value(float(safe_Z_entry), units)
+                safe_Z_rounded = self.round_float(safe_Z, 4)
+                self.safe_Z_var.set(safe_Z_rounded)  # insert new text
+                self.safe_Z_entry.icursor(tk.END)  # move cursor to end of line
+
+            self.previous_units = units
+
+    def raise_edit_dialog(self, item):
+        units = self.selected_units.get()
+        if item == "title":
+            default_content = sseq.get_example_title(units)
+            content = self.title_comment
+        elif item == "start":
+            default_content = sseq.get_start_sequence(units)
+            content = self.start_sequence
+        elif item == "end":
+            safe_Z = self.safe_Z_var.get()
+            if safe_Z:
+                default_content = sseq.get_end_sequence(float(safe_Z))
+            else:
+                default_content = sseq.get_end_sequence()    
+            content = self.end_sequence
+
+        dialog = EditSequenceDialog(self, default_content=default_content, initial_content=content)
         settings = dialog.get_settings()
         print(settings)
 

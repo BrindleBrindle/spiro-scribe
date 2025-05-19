@@ -1,0 +1,17 @@
+Units:			in
+Safe Z Height:		0.25
+Jog feedrate (XYZ):	8.0
+Cut feedrate (XY):	2.0
+Cut feedrate (Z):	1.0
+Depth per pass:		0.02
+Number of passes:	1
+Arc resolution:		200
+
+Units:			mm
+Safe Z Height:		6.35
+Jog feedrate (XYZ):	200
+Cut feedrate (XY):	50
+Cut feedrate (Z):	25
+Depth per pass:		0.5
+Number of passes:	1
+Arc resolution:		200
