@@ -22,7 +22,7 @@ class EditSequenceDialog(tk.Toplevel):
         self.initial_content = initial_content
 
         # Set window to delete itself when the cancel button is pressed.
-        self.protocol("WM_DELETE_WINDOW", self.close)
+        self.protocol("WM_DELETE_WINDOW", self.cancel)
         self.update_idletasks()
 
         # Position dialog at the center of the parent window.
@@ -50,14 +50,14 @@ class EditSequenceDialog(tk.Toplevel):
         self.button_frame.columnconfigure(1, weight=1)
         self.button_frame.grid(row=1, column=0, columnspan=2, pady=10, sticky="nsew")
 
-        # Restore Default button
+        # Refresh button
         if self.initial_content == self.default_content:
-            restore_button_state = tk.DISABLED
+            refresh_button_state = tk.DISABLED
         else:
-            restore_button_state = tk.NORMAL
-        self.restore_button = tk.Button(self.button_frame, text="Restore Default",
-                                        state=restore_button_state, command=self.restore_default)
-        self.restore_button.grid(row=0, column=0, padx=5, sticky="w")
+            refresh_button_state = tk.NORMAL
+        self.refresh_button = tk.Button(self.button_frame, text="Refresh",
+                                        state=refresh_button_state, command=self.refresh)
+        self.refresh_button.grid(row=0, column=0, padx=5, sticky="w")
 
         # Cancel button
         self.cancel_button = tk.Button(self.button_frame, text="Cancel", command=self.cancel)
@@ -86,14 +86,14 @@ class EditSequenceDialog(tk.Toplevel):
 
     def on_text_change(self, event):
         """
-        Re-enables the Restore Default button when the Text widget content is modified.
+        Re-enables the Refresh button when the Text widget content is modified.
         """
         # Enable the button only if the content has been modified
         if self.textbox.edit_modified():
-            self.restore_button.config(state=tk.NORMAL)
+            self.refresh_button.config(state=tk.NORMAL)
             self.textbox.edit_modified(False)  # Reset the modified flag
 
-    def restore_default(self):
+    def refresh(self):
         """
         Restores the default content in the Text widget and disables the button.
         """
@@ -105,7 +105,7 @@ class EditSequenceDialog(tk.Toplevel):
         self.textbox.insert("1.0", self.default_content)
 
         # Disable the button.
-        self.restore_button.configure(state=tk.DISABLED)
+        self.refresh_button.configure(state=tk.DISABLED)
 
         # Ensure the modified flag is still reset.
         self.textbox.edit_modified(False)

@@ -279,7 +279,15 @@ class ExportGCodeDialog(tk.Toplevel):
         return round(value, N)
 
     def on_units_selected(self):
-        """Callback method called when unit radio button is selected."""
+        """
+        Callback method called when unit radio button is selected.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         units = self.selected_units.get()
         units_changed = True if units != self.previous_units else False
 
@@ -299,27 +307,39 @@ class ExportGCodeDialog(tk.Toplevel):
                 self.safe_Z_var.set(safe_Z_rounded)  # insert new text
                 self.safe_Z_entry.icursor(tk.END)  # move cursor to end of line
 
+            # TODO: Add conversions for jog feedrate, cut feedrate (XY), cut feedrate (Z), and depth per pass.
+
+            # TODO: Update end sequence
+            # self.end_sequence = ...
+
             self.previous_units = units
 
     def raise_edit_dialog(self, item):
-        units = self.selected_units.get()
-        if item == "title":
-            default_content = sseq.get_example_title(units)
-            content = self.title_comment
-        elif item == "start":
-            default_content = sseq.get_start_sequence(units)
-            content = self.start_sequence
-        elif item == "end":
-            safe_Z = self.safe_Z_var.get()
-            if safe_Z:
-                default_content = sseq.get_end_sequence(float(safe_Z))
-            else:
-                default_content = sseq.get_end_sequence()    
-            content = self.end_sequence
+        """
+        Raise a dialog to enable edits to the G Code header, postscript, and tile comment sequences.
+        Store the result to a variable when the dialog is cleared.
 
-        dialog = EditSequenceDialog(self, default_content=default_content, initial_content=content)
-        settings = dialog.get_settings()
-        print(settings)
+        Args:
+            item (string): Keyword indicating which sequence is to be edited;
+                           acceptable values: "title", "start", "end"
+
+        Returns:
+            None
+        """
+        units = self.selected_units.get()
+
+        if item == "title":
+            dialog = EditSequenceDialog(self, default_content=sseq.get_example_title(units),
+                                        initial_content=self.title_comment)
+            self.title_comment = dialog.get_settings()
+        elif item == "start":
+            dialog = EditSequenceDialog(self, default_content=sseq.get_start_sequence(units),
+                                        initial_content=self.start_sequence)
+            self.start_sequence = dialog.get_settings()
+        elif item == "end":
+            dialog = EditSequenceDialog(self, default_content=sseq.get_end_sequence(),
+                                        initial_content=self.end_sequence)
+            self.end_sequence = dialog.get_settings()
 
     def close(self, event=None):
         """Return focus to the parent window and close."""

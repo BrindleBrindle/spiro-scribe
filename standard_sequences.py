@@ -45,16 +45,11 @@ def get_start_sequence(units):
     return start_sequence.strip()  # strip away any trailing whitespace
 
 
-def get_end_sequence(safe_Z=""):
+def get_end_sequence():
     """ Generate standard end sequence. """
     end_sequence = ""
     end_sequence += "(End Sequence)\n"
-
-    if safe_Z:
-        end_sequence += f"G00 Z{safe_Z} (rapid move to safe height)\n"
-    else:
-        end_sequence += "G00 Z<blank> (rapid move to safe height)\n"
-
+    end_sequence += "G00 Z<safe_Z> (rapid move to safe height)\n"
     end_sequence += "G00 X0 Y0 (rapid move to origin)\n"
     end_sequence += "M02 (end program)"
 
@@ -73,4 +68,4 @@ if __name__ == "__main__":
 
     print("Sample End Sequence:")
     print("===============================")
-    print(get_end_sequence(0.25))
+    print(get_end_sequence())
