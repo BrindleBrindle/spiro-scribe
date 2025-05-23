@@ -69,6 +69,7 @@ class EditSequenceDialog(tk.Toplevel):
 
         # Bind the <<Modified>> event to the Text widget.
         self.textbox.bind("<<Modified>>", self.on_text_change)
+        self.textbox.edit_modified(False)  # reset the modified flag
 
         # Bind the <Return> event to the whole application.
         self.bind("<Return>", self.ok)

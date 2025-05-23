@@ -30,22 +30,22 @@ class ExportGCodeDialog(tk.Toplevel):
             self.geometry("+%d+%d" % (parent.winfo_rootx() + parent.winfo_width() / 2.0 - self.winfo_width() / 2.0,
                                       parent.winfo_rooty() + parent.winfo_height() / 2.0 - self.winfo_height() / 2.0))
 
-        self.defaults_in = {"units": "in",
-                            "safe_z": 0.25,
-                            "jog_feed_xyz": 8.0,
-                            "cut_feed_xy": 2.0,
-                            "cut_feed_z": 1.0,
-                            "depth_per_pass": 0.02,
+        self.defaults_in = {"units": "imperial",
+                            "safe_z": "0.25",
+                            "jog_feed_xyz": "8.0",
+                            "cut_feed_xy": "2.0",
+                            "cut_feed_z": "1.0",
+                            "depth_per_pass": "0.02",
                             "num_passes": 1,
                             "arc_res": 200
                             }
 
-        self.defaults_mm = {"units": "mm",
-                            "safe_z": 6.35,
-                            "jog_feed_xyz": 200,
-                            "cut_feed_xy": 50,
-                            "cut_feed_z": 25,
-                            "depth_per_pass": 0.5,
+        self.defaults_mm = {"units": "metric",
+                            "safe_z": "6.35",
+                            "jog_feed_xyz": "200",
+                            "cut_feed_xy": "50",
+                            "cut_feed_z": "25",
+                            "depth_per_pass": "0.5",
                             "num_passes": 1,
                             "arc_res": 200
                             }
@@ -69,7 +69,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.toolpath_lf = ttk.LabelFrame(self.main_frame, text="Toolpath Parameters")
         self.toolpath_lf.grid(row=0, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
 
-        self.selected_units = tk.StringVar(value="imperial")
+        self.selected_units = tk.StringVar(value=self.defaults_in['units'])
         self.previous_units = self.selected_units.get()
         self.units_label = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Units")
         self.units_button_in = tk.Radiobutton(self.toolpath_lf, text="in", anchor="w", variable=self.selected_units,
@@ -84,37 +84,45 @@ class ExportGCodeDialog(tk.Toplevel):
         validate_cmd = self.register(self.validate_float_input)
 
         self.safe_Z_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Safe Z Height")
-        self.safe_Z_var = tk.StringVar()
+        self.safe_Z_var = tk.StringVar(value=self.defaults_in['safe_z'])
         self.safe_Z_entry = tk.Entry(self.toolpath_lf, textvariable=self.safe_Z_var,
-                                     validate="key", validatecommand=(validate_cmd, "%P"))
+                                     validate="key", validatecommand=(validate_cmd, "%P"), width=15)
         self.safe_Z_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in]")
         self.safe_Z_label_1.grid(row=1, column=0, padx=5, pady=5, sticky="w")
         self.safe_Z_entry.grid(row=1, column=1, columnspan=2, sticky="ew")
         self.safe_Z_label_2.grid(row=1, column=3, padx=5, sticky="w")
 
         self.jog_rate_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Jog feedrate (XYZ)")
-        self.jog_rate_entry = tk.Entry(self.toolpath_lf, width=15, text="")
+        self.jog_rate_var = tk.StringVar(value=self.defaults_in['jog_feed_xyz'])
+        self.jog_rate_entry = tk.Entry(self.toolpath_lf, textvariable=self.jog_rate_var,
+                                       validate="key", validatecommand=(validate_cmd, "%P"), width=15)
         self.jog_rate_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in/min]")
         self.jog_rate_label_1.grid(row=2, column=0, padx=5, pady=5, sticky="w")
         self.jog_rate_entry.grid(row=2, column=1, columnspan=2, sticky="ew")
         self.jog_rate_label_2.grid(row=2, column=3, padx=5, sticky="w")
 
         self.cut_rate_XY_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Cut feedrate (XY)")
-        self.cut_rate_XY_entry = tk.Entry(self.toolpath_lf, width=15, text="")
+        self.cut_rate_XY_var = tk.StringVar(value=self.defaults_in['cut_feed_xy'])
+        self.cut_rate_XY_entry = tk.Entry(self.toolpath_lf, textvariable=self.cut_rate_XY_var,
+                                          validate="key", validatecommand=(validate_cmd, "%P"), width=15)
         self.cut_rate_XY_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in/min]")
         self.cut_rate_XY_label_1.grid(row=3, column=0, padx=5, pady=5, sticky="w")
         self.cut_rate_XY_entry.grid(row=3, column=1, columnspan=2, sticky="ew")
         self.cut_rate_XY_label_2.grid(row=3, column=3, padx=5, pady=5, sticky="w")
 
         self.cut_rate_Z_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Cut feedrate (Z)")
-        self.cut_rate_Z_entry = tk.Entry(self.toolpath_lf, width=15, text="")
+        self.cut_rate_Z_var = tk.StringVar(value=self.defaults_in['cut_feed_z'])
+        self.cut_rate_Z_entry = tk.Entry(self.toolpath_lf, textvariable=self.cut_rate_Z_var,
+                                         validate="key", validatecommand=(validate_cmd, "%P"), width=15)
         self.cut_rate_Z_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in/min]")
         self.cut_rate_Z_label_1.grid(row=4, column=0, padx=5, pady=5, sticky="w")
         self.cut_rate_Z_entry.grid(row=4, column=1, columnspan=2, sticky="ew")
         self.cut_rate_Z_label_2.grid(row=4, column=3, padx=5, pady=5, sticky="w")
 
         self.depth_per_pass_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Depth per pass")
-        self.depth_per_pass_entry = tk.Entry(self.toolpath_lf, width=15, text="")
+        self.depth_per_pass_var = tk.StringVar(value=self.defaults_in['depth_per_pass'])
+        self.depth_per_pass_entry = tk.Entry(self.toolpath_lf, textvariable=self.depth_per_pass_var,
+                                             validate="key", validatecommand=(validate_cmd, "%P"), width=15)
         self.depth_per_pass_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in]")
         self.depth_per_pass_label_1.grid(row=5, column=0, padx=5, pady=5, sticky="w")
         self.depth_per_pass_entry.grid(row=5, column=1, columnspan=2, sticky="ew")
@@ -300,6 +308,7 @@ class ExportGCodeDialog(tk.Toplevel):
 
         # Convert field values if unit system changed.
         if units_changed:
+            # Convert safe Z height.
             safe_Z_entry = self.safe_Z_var.get()
             if safe_Z_entry:
                 safe_Z = self.convert_value(float(safe_Z_entry), units)
@@ -307,10 +316,37 @@ class ExportGCodeDialog(tk.Toplevel):
                 self.safe_Z_var.set(safe_Z_rounded)  # insert new text
                 self.safe_Z_entry.icursor(tk.END)  # move cursor to end of line
 
-            # TODO: Add conversions for jog feedrate, cut feedrate (XY), cut feedrate (Z), and depth per pass.
+            # Convert jog feedrate.
+            jog_rate_entry = self.jog_rate_var.get()
+            if jog_rate_entry:
+                jog_rate = self.convert_value(float(jog_rate_entry), units)
+                jog_rate_rounded = self.round_float(jog_rate, 4)
+                self.jog_rate_var.set(jog_rate_rounded)  # insert new text
+                self.jog_rate_entry.icursor(tk.END)  # move cursor to end of line
 
-            # TODO: Update end sequence
-            # self.end_sequence = ...
+            # Convert cut feedrate (XY).
+            cut_rate_XY_entry = self.cut_rate_XY_var.get()
+            if cut_rate_XY_entry:
+                cut_rate_XY = self.convert_value(float(cut_rate_XY_entry), units)
+                cut_rate_XY_rounded = self.round_float(cut_rate_XY, 4)
+                self.cut_rate_XY_var.set(cut_rate_XY_rounded)  # insert new text
+                self.cut_rate_XY_entry.icursor(tk.END)  # move cursor to end of line
+
+            # Convert cut feedrate (Z).
+            cut_rate_Z_entry = self.cut_rate_Z_var.get()
+            if cut_rate_Z_entry:
+                cut_rate_Z = self.convert_value(float(cut_rate_Z_entry), units)
+                cut_rate_Z_rounded = self.round_float(cut_rate_Z, 4)
+                self.cut_rate_Z_var.set(cut_rate_Z_rounded)  # insert new text
+                self.cut_rate_Z_entry.icursor(tk.END)  # move cursor to end of line
+
+            # Convert depth per pass.
+            depth_per_pass_entry = self.depth_per_pass_var.get()
+            if depth_per_pass_entry:
+                depth_per_pass = self.convert_value(float(depth_per_pass_entry), units)
+                depth_per_pass_rounded = self.round_float(depth_per_pass, 4)
+                self.depth_per_pass_var.set(depth_per_pass_rounded)  # insert new text
+                self.depth_per_pass_entry.icursor(tk.END)  # move cursor to end of line
 
             self.previous_units = units
 
