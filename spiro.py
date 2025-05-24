@@ -9,6 +9,7 @@ from post_processor import GCodePostProcessor
 from settings_dialog import SettingsDialog
 from info_dialog import InfoDialog
 from status_bar import StatusBar
+from export_gcode_dialog import ExportGCodeDialog
 from PIL import Image, ImageTk
 
 
@@ -89,7 +90,7 @@ class SpiroScribeApp(tk.Tk):
         pass
 
     def open_export_gcode_dialog(self):
-        pass
+        ExportGCodeDialog(self)
 
     def open_settings_dialog(self):
         # Pass in initial values for the dialog

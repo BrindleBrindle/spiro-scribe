@@ -6,6 +6,8 @@ from PIL import Image, ImageTk
 import standard_sequences as sseq
 from edit_sequence_dialog import EditSequenceDialog
 
+from tkinter import filedialog
+
 
 class ExportGCodeDialog(tk.Toplevel):
     def __init__(self, parent, *args, **kwargs):
@@ -60,6 +62,8 @@ class ExportGCodeDialog(tk.Toplevel):
                 "speed": "mm/min",
             },
         }
+
+        self.file_path = None
 
         # Create a frame for the main widgets
         self.main_frame = tk.Frame(self)
@@ -193,9 +197,11 @@ class ExportGCodeDialog(tk.Toplevel):
         resized_folder_image = folder_image.resize((18, 18))  # Resize to fit the button
         folder_button_image = ImageTk.PhotoImage(resized_folder_image)
 
-        self.out_location_label = tk.Label(self.main_frame, anchor="w", text="Output location")
-        self.out_location_entry = tk.Entry(self.main_frame, state="disabled", text="")
-        self.out_location_button = tk.Button(self.main_frame, anchor="w", image=folder_button_image)
+        self.out_location_label = tk.Label(self.main_frame, anchor="w", text="Output")
+        self.out_location_var = tk.StringVar(value="")
+        self.out_location_entry = tk.Entry(self.main_frame, state="disabled", textvariable=self.out_location_var)
+        self.out_location_button = tk.Button(self.main_frame, anchor="w", image=folder_button_image,
+                                             command=self.raise_save_as_dialog)
         self.out_location_label.grid(row=2, column=0, padx=(10, 5), pady=(5, 10), sticky="w")
         self.out_location_entry.grid(row=2, column=1, padx=(5, 5), pady=(5, 10), sticky="nsew")
         self.out_location_button.grid(row=2, column=2, padx=(5, 10), pady=(5, 10), sticky="w")
@@ -376,6 +382,16 @@ class ExportGCodeDialog(tk.Toplevel):
             dialog = EditSequenceDialog(self, default_content=sseq.get_end_sequence(),
                                         initial_content=self.end_sequence)
             self.end_sequence = dialog.get_settings()
+
+    def raise_save_as_dialog(self):
+        file_path = filedialog.asksaveasfilename(title="Select Output Location",
+                                                 defaultextension=".gcode", 
+                                                 filetypes=[("G-Code File", "*.gcode")],
+                                                 initialdir=os.getcwd())
+
+        if file_path:
+            self.out_location_var.set(file_path)
+            self.file_path = file_path
 
     def close(self, event=None):
         """Return focus to the parent window and close."""
