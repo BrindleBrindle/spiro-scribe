@@ -87,6 +87,8 @@ class ExportGCodeDialog(tk.Toplevel):
         # Register the validation function
         validate_float_cmd = self.register(self.validate_float)
         validate_floatpos_cmd = self.register(self.validate_floatpos)
+        validate_resolution_cmd = self.register(self.validate_resolution)
+        validate_passes_cmd = self.register(self.validate_passes)
 
         self.safe_Z_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Safe Z Height")
         self.safe_Z_var = tk.StringVar(value=self.defaults_in['safe_z'])
@@ -135,22 +137,21 @@ class ExportGCodeDialog(tk.Toplevel):
 
         self.num_passes_label = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Number of passes")
         self.num_passes_var = tk.StringVar(value=1)
-        self.num_passes_spinbox = tk.Spinbox(self.toolpath_lf, from_=1, to=10, increment=1, width=8, state="readonly",
+        self.num_passes_spinbox = tk.Spinbox(self.toolpath_lf, from_=1, to=10, increment=1, width=8,
+                                             validate="key", validatecommand=((validate_passes_cmd, "%P")),
                                              textvariable=self.num_passes_var)
         self.num_passes_label.grid(row=6, column=0, padx=5, pady=5, sticky="w")
-        self.num_passes_spinbox.grid(row=6, column=1, columnspan=2, sticky="w")
+        self.num_passes_spinbox.grid(row=6, column=1, columnspan=2, sticky="ew")
 
-        self.resolution_value = 100
-        self.arc_res_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Arc resolution")
-        self.arc_res_slider = tk.Scale(self.toolpath_lf, from_=100, to=1000, resolution=50,
-                                       orient="horizontal", showvalue=False, command=self.update_res_label)
-        self.arc_res_slider.set(500)
-        self.resolution_var = tk.StringVar()
-        self.resolution_var.set("100 [divs]")
-        self.arc_res_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", textvariable=self.resolution_var)
-        self.arc_res_label_1.grid(row=7, column=0, padx=5, pady=(5, 10), sticky="w")
-        self.arc_res_slider.grid(row=7, column=1, columnspan=2, sticky="ew")
-        self.arc_res_label_2.grid(row=7, column=3, sticky="w")
+        self.res_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Arc resolution")
+        self.res_var = tk.StringVar(value=self.defaults_in['arc_res'])
+        self.res_spinbox = tk.Spinbox(self.toolpath_lf, from_=100, to=5000, increment=10, width=8,
+                                      validate="key", validatecommand=((validate_resolution_cmd, "%P")),
+                                      textvariable=self.res_var)
+        self.res_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[divs/360\u00B0]")
+        self.res_label_1.grid(row=7, column=0, padx=5, pady=(5, 10), sticky="w")
+        self.res_spinbox.grid(row=7, column=1, columnspan=2, sticky="ew")
+        self.res_label_2.grid(row=7, column=3, padx=5, pady=5, sticky="w")
 
         self.sequences_lf = ttk.LabelFrame(self.main_frame, text="Sequences")
         self.sequences_lf.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
@@ -306,6 +307,48 @@ class ExportGCodeDialog(tk.Toplevel):
         except ValueError:
             return False  # Reject input if it's not a valid float
 
+    def validate_resolution(self, new_value):
+        """
+        Validates the input to ensure it is a valid arc resolution value.
+
+        Args:
+            new_value (str): The current value of the Spinbox widget after the change.
+
+        Returns:
+            bool: True if the input is a valid resolution or empty, False otherwise.
+        """
+        if new_value == "":  # Allow empty string (to enable deletion)
+            return True
+        try:
+            f = int(new_value)  # Try to convert to int
+            if (f > 0) and (f <= 5000):
+                return True
+            else:
+                return False
+        except ValueError:
+            return False  # Reject input if it's not a valid int
+
+    def validate_passes(self, new_value):
+        """
+        Validates the input to ensure it is a valid number of cut passes.
+
+        Args:
+            new_value (str): The current value of the Spinbox widget after the change.
+
+        Returns:
+            bool: True if the input is a valid number of passes or empty, False otherwise.
+        """
+        if new_value == "":  # Allow empty string (to enable deletion)
+            return True
+        try:
+            f = int(new_value)  # Try to convert to int
+            if (f > 0) and (f <= 100):
+                return True
+            else:
+                return False
+        except ValueError:
+            return False  # Reject input if it's not a valid int
+
     def round_float(self, value, N):
         """
         Rounds a float value to the specified number of decimal places.
@@ -318,19 +361,6 @@ class ExportGCodeDialog(tk.Toplevel):
             float: The rounded value to N decimal places.
         """
         return round(value, N)
-
-    def update_res_label(self, value):
-        """
-        Callback method called when resolution slider is updated.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        self.resolution_value = value
-        self.resolution_var.set(value + " [divs]")
 
     def on_units_selected(self):
         """
