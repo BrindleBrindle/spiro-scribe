@@ -85,12 +85,13 @@ class ExportGCodeDialog(tk.Toplevel):
         self.units_button_mm.grid(row=0, column=2, sticky="ew")
 
         # Register the validation function
-        validate_cmd = self.register(self.validate_float_input)
+        validate_float_cmd = self.register(self.validate_float)
+        validate_floatpos_cmd = self.register(self.validate_floatpos)
 
         self.safe_Z_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Safe Z Height")
         self.safe_Z_var = tk.StringVar(value=self.defaults_in['safe_z'])
         self.safe_Z_entry = tk.Entry(self.toolpath_lf, textvariable=self.safe_Z_var,
-                                     validate="key", validatecommand=(validate_cmd, "%P"), width=15)
+                                     validate="key", validatecommand=(validate_float_cmd, "%P"), width=15)
         self.safe_Z_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in]")
         self.safe_Z_label_1.grid(row=1, column=0, padx=5, pady=5, sticky="w")
         self.safe_Z_entry.grid(row=1, column=1, columnspan=2, sticky="ew")
@@ -99,7 +100,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.jog_rate_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Jog feedrate (XYZ)")
         self.jog_rate_var = tk.StringVar(value=self.defaults_in['jog_feed_xyz'])
         self.jog_rate_entry = tk.Entry(self.toolpath_lf, textvariable=self.jog_rate_var,
-                                       validate="key", validatecommand=(validate_cmd, "%P"), width=15)
+                                       validate="key", validatecommand=(validate_floatpos_cmd, "%P"), width=15)
         self.jog_rate_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in/min]")
         self.jog_rate_label_1.grid(row=2, column=0, padx=5, pady=5, sticky="w")
         self.jog_rate_entry.grid(row=2, column=1, columnspan=2, sticky="ew")
@@ -108,7 +109,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.cut_rate_XY_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Cut feedrate (XY)")
         self.cut_rate_XY_var = tk.StringVar(value=self.defaults_in['cut_feed_xy'])
         self.cut_rate_XY_entry = tk.Entry(self.toolpath_lf, textvariable=self.cut_rate_XY_var,
-                                          validate="key", validatecommand=(validate_cmd, "%P"), width=15)
+                                          validate="key", validatecommand=(validate_floatpos_cmd, "%P"), width=15)
         self.cut_rate_XY_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in/min]")
         self.cut_rate_XY_label_1.grid(row=3, column=0, padx=5, pady=5, sticky="w")
         self.cut_rate_XY_entry.grid(row=3, column=1, columnspan=2, sticky="ew")
@@ -117,7 +118,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.cut_rate_Z_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Cut feedrate (Z)")
         self.cut_rate_Z_var = tk.StringVar(value=self.defaults_in['cut_feed_z'])
         self.cut_rate_Z_entry = tk.Entry(self.toolpath_lf, textvariable=self.cut_rate_Z_var,
-                                         validate="key", validatecommand=(validate_cmd, "%P"), width=15)
+                                         validate="key", validatecommand=(validate_floatpos_cmd, "%P"), width=15)
         self.cut_rate_Z_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in/min]")
         self.cut_rate_Z_label_1.grid(row=4, column=0, padx=5, pady=5, sticky="w")
         self.cut_rate_Z_entry.grid(row=4, column=1, columnspan=2, sticky="ew")
@@ -126,7 +127,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.depth_per_pass_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Depth per pass")
         self.depth_per_pass_var = tk.StringVar(value=self.defaults_in['depth_per_pass'])
         self.depth_per_pass_entry = tk.Entry(self.toolpath_lf, textvariable=self.depth_per_pass_var,
-                                             validate="key", validatecommand=(validate_cmd, "%P"), width=15)
+                                             validate="key", validatecommand=(validate_floatpos_cmd, "%P"), width=15)
         self.depth_per_pass_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in]")
         self.depth_per_pass_label_1.grid(row=5, column=0, padx=5, pady=5, sticky="w")
         self.depth_per_pass_entry.grid(row=5, column=1, columnspan=2, sticky="ew")
@@ -258,7 +259,7 @@ class ExportGCodeDialog(tk.Toplevel):
         else:
             raise ValueError("Invalid unit system. Use 'metric' or 'imperial'.")
 
-    def validate_float_input(self, new_value):
+    def validate_float(self, new_value):
         """
         Validates the input to ensure it is a valid float number.
 
@@ -276,6 +277,27 @@ class ExportGCodeDialog(tk.Toplevel):
         try:
             float(new_value)  # Try to convert to float
             return True
+        except ValueError:
+            return False  # Reject input if it's not a valid float
+
+    def validate_floatpos(self, new_value):
+        """
+        Validates the input to ensure it is a valid float number greater than zero.
+
+        Args:
+            new_value (str): The current value of the Entry widget after the change.
+
+        Returns:
+            bool: True if the input is a valid float or empty, False otherwise.
+        """
+        if new_value == "":  # Allow empty string (to enable deletion)
+            return True
+        try:
+            f = float(new_value)  # Try to convert to float
+            if f >= 0:
+                return True
+            else:
+                return False
         except ValueError:
             return False  # Reject input if it's not a valid float
 
