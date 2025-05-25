@@ -140,9 +140,14 @@ class ExportGCodeDialog(tk.Toplevel):
         self.num_passes_label.grid(row=6, column=0, padx=5, pady=5, sticky="w")
         self.num_passes_spinbox.grid(row=6, column=1, columnspan=2, sticky="w")
 
+        self.resolution_value = 100
         self.arc_res_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Arc resolution")
-        self.arc_res_slider = tk.Scale(self.toolpath_lf, from_=0, to=100, orient="horizontal", showvalue=False)
-        self.arc_res_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="100")
+        self.arc_res_slider = tk.Scale(self.toolpath_lf, from_=100, to=1000, resolution=50,
+                                       orient="horizontal", showvalue=False, command=self.update_res_label)
+        self.arc_res_slider.set(500)
+        self.resolution_var = tk.StringVar()
+        self.resolution_var.set("100 [divs]")
+        self.arc_res_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", textvariable=self.resolution_var)
         self.arc_res_label_1.grid(row=7, column=0, padx=5, pady=(5, 10), sticky="w")
         self.arc_res_slider.grid(row=7, column=1, columnspan=2, sticky="ew")
         self.arc_res_label_2.grid(row=7, column=3, sticky="w")
@@ -313,6 +318,19 @@ class ExportGCodeDialog(tk.Toplevel):
             float: The rounded value to N decimal places.
         """
         return round(value, N)
+
+    def update_res_label(self, value):
+        """
+        Callback method called when resolution slider is updated.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        self.resolution_value = value
+        self.resolution_var.set(value + " [divs]")
 
     def on_units_selected(self):
         """
