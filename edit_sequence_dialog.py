@@ -71,9 +71,6 @@ class EditSequenceDialog(tk.Toplevel):
         self.textbox.bind("<<Modified>>", self.on_text_change)
         self.textbox.edit_modified(False)  # reset the modified flag
 
-        # Bind the <Return> event to the whole application.
-        self.bind("<Return>", self.ok)
-
         # Make dialog visible and set the widget that has focus.
         self.deiconify()
         self.focus_set()

@@ -24,7 +24,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.transient(parent)  # keep dialog on top of main window
 
         # Set window to delete itself when the cancel button is pressed.
-        self.protocol("WM_DELETE_WINDOW", self.close)
+        self.protocol("WM_DELETE_WINDOW", self.cancel)
         self.update_idletasks()
 
         # Position dialog at the center of the parent window.
@@ -39,7 +39,7 @@ class ExportGCodeDialog(tk.Toplevel):
                             "cut_feed_z": "1.0",
                             "depth_per_pass": "0.02",
                             "num_passes": 1,
-                            "arc_res": 200
+                            "cut_res": 200
                             }
 
         self.defaults_mm = {"units": "metric",
@@ -49,7 +49,7 @@ class ExportGCodeDialog(tk.Toplevel):
                             "cut_feed_z": "25",
                             "depth_per_pass": "0.5",
                             "num_passes": 1,
-                            "arc_res": 200
+                            "cut_res": 200
                             }
 
         self.label_values = {
@@ -63,6 +63,7 @@ class ExportGCodeDialog(tk.Toplevel):
             },
         }
 
+        self.settings = {}
         self.file_path = None
 
         # Create a frame for the main widgets
@@ -144,7 +145,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.num_passes_spinbox.grid(row=6, column=1, columnspan=2, sticky="ew")
 
         self.res_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Arc resolution")
-        self.res_var = tk.StringVar(value=self.defaults_in['arc_res'])
+        self.res_var = tk.StringVar(value=self.defaults_in['cut_res'])
         self.res_spinbox = tk.Spinbox(self.toolpath_lf, from_=100, to=5000, increment=10, width=8,
                                       validate="key", validatecommand=((validate_resolution_cmd, "%P")),
                                       textvariable=self.res_var)
@@ -168,7 +169,7 @@ class ExportGCodeDialog(tk.Toplevel):
         pencil_button_image = ImageTk.PhotoImage(resized_pencil_image)
 
         self.add_comment_label = tk.Label(self.sequences_lf, anchor="w", text="Description (title comment)")
-        self.add_comment_var = tk.BooleanVar(value=False)
+        self.add_comment_var = tk.BooleanVar(value=True)
         self.add_comment_checkbutton = tk.Checkbutton(self.sequences_lf, variable=self.add_comment_var)
         self.edit_comment_button = tk.Button(self.sequences_lf, image=pencil_button_image,
                                              command=lambda: self.raise_edit_dialog("title"))
@@ -179,7 +180,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.edit_comment_button.image = pencil_button_image  # Keep a reference
 
         self.add_header_label = tk.Label(self.sequences_lf, anchor="w", text="Start sequence (header)")
-        self.add_header_var = tk.BooleanVar(value=False)
+        self.add_header_var = tk.BooleanVar(value=True)
         self.add_header_checkbutton = tk.Checkbutton(self.sequences_lf, variable=self.add_header_var)
         self.edit_header_button = tk.Button(self.sequences_lf, image=pencil_button_image,
                                             command=lambda: self.raise_edit_dialog("start"))
@@ -190,7 +191,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.edit_header_button.image = pencil_button_image  # Keep a reference
 
         self.add_postscript_label = tk.Label(self.sequences_lf, anchor="w", text="End sequence (postscript)")
-        self.add_postscript_var = tk.BooleanVar(value=False)
+        self.add_postscript_var = tk.BooleanVar(value=True)
         self.add_postscript_checkbutton = tk.Checkbutton(self.sequences_lf, variable=self.add_postscript_var)
         self.edit_postscript_button = tk.Button(self.sequences_lf, image=pencil_button_image,
                                                 command=lambda: self.raise_edit_dialog("end"))
@@ -224,7 +225,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.bind("<Return>", self.close)
 
         # Add an export button
-        self.export_button = tk.Button(self.export_button_frame, text="Export", command=self.close)
+        self.export_button = tk.Button(self.export_button_frame, state="disabled", text="Export", command=self.export)
         self.export_button.grid(row=0, column=1, padx=5, pady=(5, 5), sticky="nse")
         self.bind("<Return>", self.close)
 
@@ -456,18 +457,59 @@ class ExportGCodeDialog(tk.Toplevel):
     def raise_save_as_dialog(self):
         file_path = filedialog.asksaveasfilename(title="Select Output Location",
                                                  defaultextension=".gcode", 
-                                                 filetypes=[("G-Code File", "*.gcode")],
+                                                 filetypes=[("G-Code File", "*.nc")],
                                                  initialdir=os.getcwd())
 
         if file_path:
+            self.export_button.configure(state='normal')
             self.out_location_var.set(file_path)
             self.file_path = file_path
+
+    def export(self, event=None):
+        toolpath_parameters = {}
+        toolpath_parameters['units'] = self.selected_units.get()
+        toolpath_parameters['safe_z'] = float(self.safe_Z_var.get())
+        toolpath_parameters['jog_feed_xyz'] = float(self.jog_rate_var.get())
+        toolpath_parameters['cut_feed_xy'] = float(self.cut_rate_XY_var.get())
+        toolpath_parameters['cut_feed_z'] = float(self.cut_rate_Z_var.get())
+        toolpath_parameters['depth_per_pass'] = float(self.depth_per_pass_var.get())
+        toolpath_parameters['num_passes'] = int(self.num_passes_var.get())
+        toolpath_parameters['cut_res'] = int(self.res_var.get())
+
+        title_comment = {}
+        title_comment['include'] = self.add_comment_var.get()
+        title_comment['text'] = self.title_comment
+
+        start_sequence = {}
+        start_sequence['include'] = self.add_header_var.get()
+        start_sequence['text'] = self.start_sequence
+
+        end_sequence = {}
+        end_sequence['include'] = self.add_postscript_var.get()
+        end_sequence['text'] = self.end_sequence
+
+        self.settings = {"file_path": self.file_path,
+                         "toolpath_parameters": toolpath_parameters,
+                         "title_comment": title_comment,
+                         "start_sequence": start_sequence,
+                         "end_sequence": end_sequence
+                         }
+
+        self.close()
+
+    def cancel(self, event=None):
+        self.settings = {}
+        self.close()
 
     def close(self, event=None):
         """Return focus to the parent window and close."""
         if self.parent is not None:
             self.parent.focus_set()
         tk.Toplevel.destroy(self)
+
+    def get_settings(self):
+        """Return the current state of the dialog widgets."""
+        return self.settings
 
 
 class DemoApp(tk.Tk):

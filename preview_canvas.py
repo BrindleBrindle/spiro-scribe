@@ -88,11 +88,13 @@ class PreviewCanvas(tk.Canvas):
                     )
                 elif element['type'] == 'line':
                     self._draw_line(
-                        element['x1'], element['y1'], element['x2'], element['y2'], self.pattern_color, self.pattern_linewidth
+                        element['x1'], element['y1'], element['x2'], element['y2'],
+                        self.pattern_color, self.pattern_linewidth
                     )
                 elif element['type'] == 'roulette':
                     self._draw_roulette(
-                        element['R'], element['r'], element['s'], element['d'], element['res'], self.pattern_color, self.pattern_linewidth
+                        element['R'], element['r'], element['s'], element['d'],
+                        element['display res'], self.pattern_color, self.pattern_linewidth
                     )
 
         # Draw crosshair
@@ -159,7 +161,7 @@ class PreviewCanvas(tk.Canvas):
         # Draw vertical line
         self.create_line(x, y - 10, x, y + 10, fill="red", width=3, tags="crosshair")
 
-    def _draw_roulette(self, R, r, s, d, res, color, width):
+    def _draw_roulette(self, R, r, s, d, display_res, color, width):
         """
         Render a roulette on the canvas.
 
@@ -168,7 +170,7 @@ class PreviewCanvas(tk.Canvas):
             r (float): Radius of the rolling circle.
             s (int): Scaling factor for the rolling circle radius, either -1 or 1.
             d (float): Distance of the pen point from the rolling circle center.
-            res (int): Resolution of the curve (number of points).
+            display_res (int): Resolution of the curve (number of points).
             color (str): The display color of the line (#FFF or #FFFFFF).
             width (int): The display width of the line in px.
 
@@ -199,7 +201,7 @@ class PreviewCanvas(tk.Canvas):
         # Calculate the number of turns needed to close the path.
         n_turns = r / gcd_fraction
         total_angle = n_turns * 2 * np.pi
-        thetas = np.linspace(0, total_angle, res, endpoint=False)
+        thetas = np.linspace(0, total_angle, display_res, endpoint=False)
 
         # Compute the starting point.
         first_x, first_y = compute_point(thetas[0])

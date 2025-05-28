@@ -1,8 +1,5 @@
 import tkinter as tk
-import random
-import math
 import os
-import numpy as np
 from user_controls import UserControlsPane
 from preview_canvas import PreviewCanvas
 from post_processor import GCodePostProcessor
@@ -61,6 +58,9 @@ class SpiroScribeApp(tk.Tk):
         # Keep a reference to the image to prevent garbage collection
         self.info_button.image = button_image
 
+        self.circles = []
+        self.roulette = {}
+
         self.canvas = PreviewCanvas(
             parent=self.frame,
             width=400,
@@ -76,7 +76,6 @@ class SpiroScribeApp(tk.Tk):
         self.user_controls = UserControlsPane(self.frame)
         self.user_controls.grid(row=3, column=0, padx=(5, 5), pady=(10, 5), sticky="nsew")
         self.post_processor = GCodePostProcessor()
-        self.circles = []
 
         # Bind to widget custom events
         self.bind("<<BackgroundColorAction>>", self.handle_background_color_event)
@@ -90,7 +89,45 @@ class SpiroScribeApp(tk.Tk):
         pass
 
     def open_export_gcode_dialog(self):
-        ExportGCodeDialog(self)
+        # Open Export G Code dialog.
+        # TODO: Pass in initial values for the dialog.
+        dialog = ExportGCodeDialog(self)
+
+        # Retrieve settings from dialog.
+        export_settings = dialog.get_settings()
+
+        # Export G code if settings are not empty.
+        if export_settings:
+            # Add title comment (if specified).
+            if export_settings['title_comment']['include']:
+                self.post_processor.add_comment(export_settings['title_comment']['text'], apply_formatting=False)
+                self.post_processor.add_linebreak()
+
+            # Add start sequence (if specified).
+            if export_settings['start_sequence']['include']:
+                self.post_processor.add_comment(export_settings['start_sequence']['text'], apply_formatting=False)
+                self.post_processor.add_linebreak()
+
+            # Add circles (if specified).
+            if self.circles:
+                for circle in self.circles:
+                    self.post_processor.parse_circle(circle)
+                    self.post_processor.add_linebreak()
+
+            # Add roulette (if specified).
+            if self.roulette:
+                self.post_processor.parse_roulette(self.roulette, export_settings['toolpath_parameters'])
+                self.post_processor.add_linebreak()
+
+            # Add end sequence (if specified).
+            if export_settings['end_sequence']['include']:
+                safe_z = export_settings['toolpath_parameters']['safe_z']
+                end_sequence_unformatted = export_settings['end_sequence']['text']
+                end_sequence_formatted = end_sequence_unformatted.replace("<safe_Z>", f"{safe_z}")
+                self.post_processor.add_comment(end_sequence_formatted, apply_formatting=False)
+
+            # Save G code to file.
+            self.post_processor.save_to_file(export_settings['file_path'])
 
     def open_settings_dialog(self):
         # Pass in initial values for the dialog
@@ -146,53 +183,8 @@ class SpiroScribeApp(tk.Tk):
         event triggered by the widgets on the Roulette Settings tab.
         """
         self.roulette = event.widget.get_roulette_data()
-        self.canvas.set_pattern(self.roulette)
+        self.canvas.set_pattern([self.roulette])  # must be a list
         self.canvas.refresh_pattern()
-
-    def generate_random_spiro(self):
-        pattern = []
-
-        # Determine shape parameters.
-        R = random.randint(3, 6)   # radius of circle A (static)
-        r = random.randint(1, 6)    # radius of circle B (rolling)
-        s = random.choice([-1, 1])  # if s=1, B rolls on outside; if s=-1, B rolls on inside
-        d = random.randint(1, 6)   # pen distance from center of circle B
-        res = 200                   # resolution: number of linear segments per closed path
-
-        # Calculate number of turns needed to close path
-        n_turns = r / float(math.gcd(r, R + s * r))
-
-        points = []
-        for theta in np.arange(0, n_turns * 2 * np.pi, n_turns * 2 * np.pi / float(res)):
-            x = (R + s * r) * np.cos(theta) - s * d * np.cos(theta * (R + s * r) / float(r))
-            y = (R + s * r) * np.sin(theta) - d * np.sin(theta * (R + s * r) / float(r))
-            points.append((x, y))
-
-        pattern.append({'type': 'spiro', 'points': points})
-        return pattern
-
-    def generate_random_circles(self):
-        """
-        Generate a random number of circles (between 3 and 12) in a circular pattern.
-
-        Arguments:
-            None
-
-        Returns:
-            list (Dict): A list of drawing elements defined in mm.
-        """
-        pattern = []
-        num_circles = random.randint(3, 20)
-
-        radius = 6  # mm
-        angles = np.linspace(0, 2 * np.pi, num_circles, endpoint=False)
-
-        for theta in angles:
-            x = radius * np.cos(theta)
-            y = radius * np.sin(theta)
-            pattern.append({'type': 'circle', 'x': x, 'y': y, 'radius': radius})
-
-        return pattern
 
 
 def center_window(window):

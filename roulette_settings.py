@@ -50,20 +50,6 @@ class RouletteSettings(tk.Frame):
         pen_distance_spinbox.grid(row=1, column=4, padx=5, pady=5)
         self.widgets.append(pen_distance_spinbox)
 
-        # # Slider for Resolution
-        # resolution_slider = tk.Scale(
-        #     self,
-        #     from_=100,  # minimum value
-        #     to=500,  # maximum value
-        #     orient="horizontal",  # horizontal slider
-        #     showvalue=False,
-        #     state="disabled",
-        #     length=80
-        # )
-        # resolution_slider.set(50)  # Set default value
-        # resolution_slider.grid(row=1, column=5, padx=5)
-        # self.widgets.append(resolution_slider)
-
     def toggle_widgets(self):
         """Enable or disable the widgets based on the state of the Checkbutton."""
         is_enabled = self.widgets[0].get()  # checkbutton state (BooleanVar)
@@ -90,18 +76,18 @@ class RouletteSettings(tk.Frame):
             None
 
         Returns:
-            list (Dict): A list of drawing elements defined in mm.
+            data (dict): Dictionary containing the selected roulette parameters.
         """
-        data = []
+        data = {}
         enabled = self.widgets[0].get()  # Boolean value from Checkbutton
 
         if enabled:
-            R = float(self.widgets[1].get())
-            r = float(self.widgets[2].get())
-            s = {"Inside": -1, "Outside": 1}.get(self.widgets[3].get())  # translate string from combo to number
-            d = float(self.widgets[4].get())
-            res = 200
-            data.append({'type': 'roulette', 'R': R, 'r': r, 's': s, 'd': d, 'res': res})
+            data['type'] = "roulette"
+            data['R'] = float(self.widgets[1].get())
+            data['r'] = float(self.widgets[2].get())
+            data['s'] = {"Inside": -1, "Outside": 1}.get(self.widgets[3].get())  # translate string from combo to number
+            data['d'] = float(self.widgets[4].get())
+            data['display res'] = 200
 
         return data
 

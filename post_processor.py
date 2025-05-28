@@ -1,9 +1,14 @@
+import numpy as np
+import math
+from fractions import Fraction
+
+
 class GCodePostProcessor:
     def __init__(self, safe_Z_height=0.25):
         self.gcode = []  # Stores generated G-Code lines
         self.safe_Z_height = safe_Z_height
 
-    def add_comment(self, comment):
+    def add_comment(self, comment, apply_formatting=True):
         """
         Add a comment to the G-Code.
 
@@ -13,7 +18,22 @@ class GCodePostProcessor:
         Returns:
             None
         """
-        self.gcode.append(f"({comment})")
+        if apply_formatting:
+            self.gcode.append(f"({comment})")
+        else:
+            self.gcode.append(f"{comment}")
+
+    def add_linebreak(self):
+        """
+        Add a blank line to the G-Code. (Useful for creating breaks between code sections.)
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+        self.gcode.append("")  # already includes newline
 
     def move_linear(self, x=None, y=None, z=None, feedrate=None, comment=None):
         """
@@ -28,6 +48,12 @@ class GCodePostProcessor:
             None
         """
         command = "G01"
+
+        # print(f'x: {x}')
+        # print(f'y: {y}')
+        # print(f'z: {z}')
+        # print(f'feedrate: {feedrate}')
+        # print(f'comment: {comment}')
 
         # Add command components if specified
         if x is not None:
@@ -49,7 +75,8 @@ class GCodePostProcessor:
         Add an arc movement command (G02/G03). Arc starts at the current position.
 
         Rules:
-            - For an arc less than 360 degrees: One or more axis words (X, Y) and one or more offsets (I, J) must be provided.
+            - For an arc less than 360 degrees: One or more axis words (X, Y) and one or more offsets (I, J) must be
+              provided.
             - For a full circle: No axis words (X, Y) and one or more offsets (I, J) must be provided.
 
         Arguments:
@@ -88,7 +115,7 @@ class GCodePostProcessor:
         # Append the generated command to the G-Code list
         self.gcode.append(command)
 
-    def parse_circle(self, circle_data, working_height):
+    def parse_circle(self, circle_data, toolpath_data):
         """
         Parse a circle dictionary into a series of G-code moves.
 
@@ -100,12 +127,13 @@ class GCodePostProcessor:
 
         Arguments:
             circle_data (dict): Circle data with keys 'type', 'x', 'y', and 'radius'.
-            working_height (float): Z height for material removal.
+            toolpath_data (dict): TODO -- Add description here
 
         Returns:
             None
         """
-        # Ensure the input is a valid circle
+
+        # Ensure the input is a circle
         if circle_data.get("type") != "circle":
             raise ValueError("The input data is not a circle.")
 
@@ -130,6 +158,94 @@ class GCodePostProcessor:
         self.move_linear(x=None, y=None, z=working_height)
         self.move_arc(x=None, y=None, i=i_offset, j=j_offset, clockwise=True)
         self.move_linear(x=None, y=None, z=self.safe_Z_height)
+
+    def parse_roulette(self, roulette_data, toolpath_data):
+        """
+        Parse a roulette dictionary into a series of G-code moves.
+
+        Produces:
+            - TODO: Add step 1
+            - TODO: Add step 2
+            - ...
+
+        Arguments:
+            roulette_data (dict): Roulette data with keys 'type', 'R', 'r', 's', 'd', and 'display res'.
+            toolpath_data (dict): TODO -- Add description here
+
+        Returns:
+            None
+        """
+
+        def compute_point(theta):
+            """Helper function to compute the (x, y) point for a given theta."""
+            factor = (R + s * r)
+            x = factor * np.cos(theta) - s * d * np.cos(theta * factor / r)
+            y = factor * np.sin(theta) - d * np.sin(theta * factor / r)
+            return x, y
+
+        # Ensure the input is a roulette
+        if roulette_data.get("type") != "roulette":
+            raise ValueError("The input data is not a roulette.")
+
+        # Extract roulette parameters
+        R = roulette_data["R"]
+        r = roulette_data["r"]
+        s = roulette_data["s"]
+        d = roulette_data["d"]
+
+        # Extract toolpath parameters
+        safe_z = toolpath_data['safe_z']
+        jog_feed_xyz = toolpath_data['jog_feed_xyz']
+        cut_feed_xy = toolpath_data['cut_feed_xy']
+        cut_feed_z = toolpath_data['cut_feed_z']
+        depth_per_pass = toolpath_data['depth_per_pass']
+        num_passes = toolpath_data['num_passes']
+        cut_res = toolpath_data['cut_res']
+
+        # Add a comment for the roulette
+        self.add_comment(f"Roulette with parameters: R={R}, r={r}, s={s}, d={d}, res={cut_res}")
+
+        # Define R and r as fractions
+        R = Fraction(R)
+        r = Fraction(r)
+
+        # Compute the effective radius
+        effective_R = R + s * r
+
+        # Compute the GCD of the numerators and denominators
+        numerator_gcd = math.gcd(r.numerator, effective_R.numerator)
+        denominator_lcm = (r.denominator * effective_R.denominator) // math.gcd(r.denominator, effective_R.denominator)
+
+        # Simplify the GCD as a fraction
+        gcd_fraction = Fraction(numerator_gcd, denominator_lcm)
+
+        # Calculate the number of turns needed to close the path.
+        n_turns = r / gcd_fraction
+        total_angle = n_turns * 2 * np.pi
+        thetas = np.linspace(0, total_angle, cut_res, endpoint=False)
+
+        for p in range(1, num_passes + 1):
+            # Compute the starting point.
+            first_x, first_y = compute_point(thetas[0])
+            start_x, start_y = first_x, first_y
+
+            # Add a comment for the circle
+            self.add_comment(f"====== Cut Pass {p} ======")
+
+            # Jog to starting XY at safe Z height.
+            self.move_linear(z=safe_z, feedrate=jog_feed_xyz, comment="rapid move to safe Z")
+            self.move_linear(x=start_x, y=start_y, feedrate=jog_feed_xyz, comment="rapid move to XY start")
+
+            # Plunge into material.
+            self.move_linear(z=-p*depth_per_pass, feedrate=cut_feed_z, comment="Z plunge")
+
+            # Draw the pattern by moving between consecutive points.
+            for theta in thetas[1:]:
+                next_x, next_y = compute_point(theta)
+                self.move_linear(x=next_x, y=next_y, feedrate=cut_feed_xy)
+
+            # Close the pattern by moving back to the starting point.
+            self.move_linear(x=start_x, y=start_y, feedrate=cut_feed_xy)
 
     def add_start_seq(self):
         """
