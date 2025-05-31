@@ -4,16 +4,15 @@ from fractions import Fraction
 
 
 class GCodePostProcessor:
-    def __init__(self, safe_Z_height=0.25):
-        self.gcode = []  # Stores generated G code lines
-        self.safe_Z_height = safe_Z_height
+    def __init__(self):
+        self.gcode = []  # stores generated G code lines
 
     def add_comment(self, comment, apply_formatting=True):
         """
         Add a comment to the G code.
 
         Arguments:
-            comment (str): String containing the comment to add to the G code file.
+            comment (str): String containing the comment to add to the G code compilation.
 
         Returns:
             None
@@ -37,7 +36,7 @@ class GCodePostProcessor:
 
     def move_linear(self, x=None, y=None, z=None, feedrate=None, comment=None):
         """
-        Add a linear movement command (G01).
+        Add a linear move (G01 command) to the G code.
 
         Arguments:
             x, y, z (float, optional): Target coordinates (ending position) for the move.
@@ -66,7 +65,7 @@ class GCodePostProcessor:
 
     def move_arc(self, x=None, y=None, i=None, j=None, clockwise=True, feedrate=None, comment=None):
         """
-        Add an arc movement command (G02/G03). Arc starts at the current position.
+        Add an arc move (G02/G03 command) to the G code. Arc starts at the current position.
 
         Rules:
             - For an arc less than 360 degrees: One or more axis words (X, Y) and one or more offsets (I, J) must be
@@ -310,42 +309,6 @@ class GCodePostProcessor:
             # Close the pattern by moving back to the starting point.
             self.move_linear(x=start_x_offset, y=start_y_offset, feedrate=cut_feed_xy)
 
-    def add_start_seq(self):
-        """
-        Add a standardized starting sequence to the program.
-
-        Arguments:
-            None
-
-        Returns:
-            None
-        """
-        self.gcode.append("(Start Sequence)")
-        self.gcode.append("G90 (use absolute distance mode)")
-        self.gcode.append("G20 (use inch length units)")
-        self.gcode.append("G94 (feed in units per minute)")
-        self.gcode.append("G80 (cancel any active canned cycle)")
-        self.gcode.append("G40 (cancel cutter radius compensation)")
-        self.gcode.append("G49 (cancel tool length compensation)")
-        self.gcode.append("G17 (set current plane to XY)")
-        self.gcode.append("")
-
-    def add_end_seq(self):
-        """
-        Add a standardized ending sequence to the program.
-
-        Arguments:
-            None
-
-        Returns:
-            None
-        """
-        self.gcode.append("")
-        self.gcode.append("(End Sequence)")
-        self.gcode.append(f"G00 Z{self.safe_Z_height} (rapid move to safe height)")
-        self.gcode.append("G00 X0.000 Y0.000 (rapid move to origin)")
-        self.gcode.append("M02 (end program)")
-
     def get_gcode(self):
         """
         Return the generated G code as a string.
@@ -383,12 +346,10 @@ class GCodePostProcessor:
 # Example usage
 if __name__ == "__main__":
     post_processor = GCodePostProcessor()
-    post_processor.add_start_seq()
     post_processor.add_comment('Main Sequence')
     post_processor.move_linear(x=10, y=20, z=5, feedrate=1500)
     post_processor.move_arc(x=15, y=25, i=2.5, j=2.5, clockwise=True, feedrate=1200)
     post_processor.move_linear(x=0, y=0, z=0, feedrate=1000)
-    post_processor.add_end_seq()
 
     # Save the G code to a file
     post_processor.save_to_file("output.nc")
