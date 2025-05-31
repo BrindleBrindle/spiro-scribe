@@ -5,15 +5,15 @@ from fractions import Fraction
 
 class GCodePostProcessor:
     def __init__(self, safe_Z_height=0.25):
-        self.gcode = []  # Stores generated G-Code lines
+        self.gcode = []  # Stores generated G code lines
         self.safe_Z_height = safe_Z_height
 
     def add_comment(self, comment, apply_formatting=True):
         """
-        Add a comment to the G-Code.
+        Add a comment to the G code.
 
         Arguments:
-            comment (str): String containing the comment to add to the G-code file.
+            comment (str): String containing the comment to add to the G code file.
 
         Returns:
             None
@@ -25,7 +25,7 @@ class GCodePostProcessor:
 
     def add_linebreak(self):
         """
-        Add a blank line to the G-Code. (Useful for creating breaks between code sections.)
+        Add a blank line to the G code. (Useful for creating breaks between code sections.)
 
         Arguments:
             None
@@ -49,12 +49,6 @@ class GCodePostProcessor:
         """
         command = "G01"
 
-        # print(f'x: {x}')
-        # print(f'y: {y}')
-        # print(f'z: {z}')
-        # print(f'feedrate: {feedrate}')
-        # print(f'comment: {comment}')
-
         # Add command components if specified
         if x is not None:
             command += f" X{x:.3f}"
@@ -67,7 +61,7 @@ class GCodePostProcessor:
         if comment is not None:
             command += f" ({comment})"
 
-        # Append the generated command to the G-Code list
+        # Append the generated command to the G code list
         self.gcode.append(command)
 
     def move_arc(self, x=None, y=None, i=None, j=None, clockwise=True, feedrate=None, comment=None):
@@ -95,7 +89,7 @@ class GCodePostProcessor:
         if (x is not None or y is not None) and (i is None and j is None):
             raise ValueError("For an arc less than 360 degrees, at least one of I or J must be specified.")
 
-        # Determine G-Code command (G02 for clockwise, G03 for counterclockwise)
+        # Determine G code command (G02 for clockwise, G03 for counterclockwise)
         command = "G02" if clockwise else "G03"
 
         # Add command components if specified
@@ -112,22 +106,39 @@ class GCodePostProcessor:
         if comment is not None:
             command += f" ({comment})"
 
-        # Append the generated command to the G-Code list
+        # Append the generated command to the G code list
         self.gcode.append(command)
 
-    def parse_circle(self, circle_data, toolpath_data):
+    def parse_circle(self, circle_data, toolpath_data, origin_offset):
         """
-        Parse a circle dictionary into a series of G-code moves.
+        Parse a circle dictionary into a series of G code moves.
 
         Produces:
-            - Linear move 1: Rapid XY move to the left edge of the provided circle.
-            - Linear move 2: Plunge Z to the provided working height.
-            - Arc move: Trace a full circle in the clockwise direction at the working height.
-            - Linear move 3: Rapid Z move to safe Z height.
+            1) Comment containing circle parameters.
+            2) Comment containing cut pass number.
+            3) G01: Rapid Z to safe Z height.
+            4) G01: Rapid XY to the left edge of the provided circle.
+            5) G01: Z plunge to cutting depth at Z feedrate.
+            6) G02: Trace a full circle in the clockwise direction.
+            5) G01: Rapid Z to safe Z height.
 
         Arguments:
-            circle_data (dict): Circle data with keys 'type', 'x', 'y', and 'radius'.
-            toolpath_data (dict): TODO -- Add description here
+            circle_data (dict): Dictionary of circle parameters.
+                                  example_data = {"type": "circle",
+                                                  "x": 6.5,
+                                                  "y": 2.5,
+                                                  "radius": 1}
+            toolpath_data (dict): Dictionary of machining parameters.
+                                  example_data = {"units": "imperial",
+                                                  "safe_z": 0.25,
+                                                  "jog_feed_xyz": 8.0,
+                                                  "cut_feed_xy": 2.0,
+                                                  "cut_feed_z": 1.0,
+                                                  "depth_per_pass": 0.02,
+                                                  "num_passes": 1,
+                                                  "cut_res": 200}
+            origin_offset (tuple): X and Y amounts by which to translate pattern to account for
+                                   origin location (dX, dY).
 
         Returns:
             None
@@ -137,40 +148,84 @@ class GCodePostProcessor:
         if circle_data.get("type") != "circle":
             raise ValueError("The input data is not a circle.")
 
-        # Extract parameters
+        # Extract circle parameters
         center_x = circle_data["x"]
         center_y = circle_data["y"]
         radius = circle_data["radius"]
 
+        # Extract toolpath parameters
+        safe_z = toolpath_data['safe_z']
+        jog_feed_xyz = toolpath_data['jog_feed_xyz']
+        cut_feed_xy = toolpath_data['cut_feed_xy']
+        cut_feed_z = toolpath_data['cut_feed_z']
+        depth_per_pass = toolpath_data['depth_per_pass']
+        num_passes = toolpath_data['num_passes']
+
+        # Extract origin offsets
+        offset_x, offset_y = origin_offset
+
         # Calculate starting/ending point (left edge of the circle)
         start_x = center_x - radius
         start_y = center_y
+        start_x_offset = start_x + offset_x  # to account for origin location
+        start_y_offset = start_y + offset_y  # to account for origin location
 
         # Calculate center offsets relative to the starting point
         i_offset = radius  # radius units to the right of starting point
         j_offset = 0.0  # vertically aligned with starting point
 
         # Add a comment for the circle
-        self.add_comment(f"Circle at ({center_x}, {center_y}) with radius {radius}")
+        self.add_comment(f"Circle with parameters: x={center_x + offset_x}, y={center_y + offset_y}, radius={radius}")
 
-        # Generate G-Code commands
-        self.move_linear(x=start_x, y=start_y, z=None)
-        self.move_linear(x=None, y=None, z=working_height)
-        self.move_arc(x=None, y=None, i=i_offset, j=j_offset, clockwise=True)
-        self.move_linear(x=None, y=None, z=self.safe_Z_height)
+        for p in range(1, num_passes + 1):
+            # Add a comment with the number of the current pass.
+            self.add_comment(f"====== Cut Pass {p} ======")
 
-    def parse_roulette(self, roulette_data, toolpath_data):
+            # Jog to starting XY at safe Z height.
+            self.move_linear(z=safe_z, feedrate=jog_feed_xyz, comment="rapid move to safe Z")
+            self.move_linear(x=start_x_offset, y=start_y_offset, feedrate=jog_feed_xyz,
+                             comment="rapid move to XY start")
+
+            # Plunge into material.
+            self.move_linear(z=-p*depth_per_pass, feedrate=cut_feed_z, comment="Z plunge")
+
+            # Cut arc in clockwise motion.
+            self.move_arc(x=None, y=None, i=i_offset, j=j_offset, clockwise=True, feedrate=cut_feed_xy,
+                          comment="clockwise arc")
+
+    def parse_roulette(self, roulette_data, toolpath_data, origin_offset):
         """
-        Parse a roulette dictionary into a series of G-code moves.
+        Parse a roulette dictionary into a series of G code commands.
+        Append the commands to the local G code program.
 
         Produces:
-            - TODO: Add step 1
-            - TODO: Add step 2
-            - ...
+            1) Comment containing roulette parameters.
+            2) Comment containing cut pass number.
+            3) G01: Rapid Z to safe Z height.
+            4) G01: Rapid XY to XY start.
+            5) G01: Z plunge to cutting depth at Z feedrate.
+            6) G01: Move to successive XY points at XY feedrate until pattern is complete.
+            Repeat steps (2)-(6) for specified number of passes.
 
         Arguments:
-            roulette_data (dict): Roulette data with keys 'type', 'R', 'r', 's', 'd', and 'display res'.
-            toolpath_data (dict): TODO -- Add description here
+            roulette_data (dict): Dictionary of roulette parameters.
+                                  example_data = {"type": "roulette",
+                                                  "R": 6.5,
+                                                  "r": 2.5,
+                                                  "s": 1,
+                                                  "d": 3.5,
+                                                  "display_res": 200}
+            toolpath_data (dict): Dictionary of machining parameters.
+                                  example_data = {"units": "imperial",
+                                                  "safe_z": 0.25,
+                                                  "jog_feed_xyz": 8.0,
+                                                  "cut_feed_xy": 2.0,
+                                                  "cut_feed_z": 1.0,
+                                                  "depth_per_pass": 0.02,
+                                                  "num_passes": 1,
+                                                  "cut_res": 200}
+            origin_offset (tuple): X and Y amounts by which to translate pattern to account for
+                                   origin location (dX, dY).
 
         Returns:
             None
@@ -202,6 +257,9 @@ class GCodePostProcessor:
         num_passes = toolpath_data['num_passes']
         cut_res = toolpath_data['cut_res']
 
+        # Extract origin offsets
+        offset_x, offset_y = origin_offset
+
         # Add a comment for the roulette
         self.add_comment(f"Roulette with parameters: R={R}, r={r}, s={s}, d={d}, res={cut_res}")
 
@@ -228,24 +286,29 @@ class GCodePostProcessor:
             # Compute the starting point.
             first_x, first_y = compute_point(thetas[0])
             start_x, start_y = first_x, first_y
+            start_x_offset = start_x + offset_x  # to account for origin location
+            start_y_offset = start_y + offset_y  # to account for origin location
 
-            # Add a comment for the circle
+            # Add a comment with the number of the current pass.
             self.add_comment(f"====== Cut Pass {p} ======")
 
             # Jog to starting XY at safe Z height.
             self.move_linear(z=safe_z, feedrate=jog_feed_xyz, comment="rapid move to safe Z")
-            self.move_linear(x=start_x, y=start_y, feedrate=jog_feed_xyz, comment="rapid move to XY start")
+            self.move_linear(x=start_x_offset, y=start_y_offset, feedrate=jog_feed_xyz,
+                             comment="rapid move to XY start")
 
             # Plunge into material.
             self.move_linear(z=-p*depth_per_pass, feedrate=cut_feed_z, comment="Z plunge")
 
-            # Draw the pattern by moving between consecutive points.
+            # Move to the next XY location.
             for theta in thetas[1:]:
                 next_x, next_y = compute_point(theta)
-                self.move_linear(x=next_x, y=next_y, feedrate=cut_feed_xy)
+                next_x_offset = next_x + offset_x
+                next_y_offset = next_y + offset_y
+                self.move_linear(x=next_x_offset, y=next_y_offset, feedrate=cut_feed_xy)
 
             # Close the pattern by moving back to the starting point.
-            self.move_linear(x=start_x, y=start_y, feedrate=cut_feed_xy)
+            self.move_linear(x=start_x_offset, y=start_y_offset, feedrate=cut_feed_xy)
 
     def add_start_seq(self):
         """
@@ -285,19 +348,19 @@ class GCodePostProcessor:
 
     def get_gcode(self):
         """
-        Return the generated G-Code as a string.
+        Return the generated G code as a string.
 
         Arguments:
             None
 
         Returns:
-            String containing all the generated G-code.
+            String containing all the generated G code.
         """
         return "\n".join(self.gcode)
 
     def save_to_file(self, filename):
         """
-        Save the generated G-Code to a file.
+        Save the generated G code to a file.
 
         Arguments:
             filename (str): The name of the destination file.
@@ -310,11 +373,11 @@ class GCodePostProcessor:
         if not filename.endswith(".nc"):
             filename += ".nc"
 
-        # Write the G-Code to the file.
+        # Write the G code to the file.
         with open(filename, "w") as file:
             file.write(self.get_gcode())
 
-        print(f"G-Code saved to {filename}")
+        print(f"G code saved to {filename}")
 
 
 # Example usage
@@ -327,5 +390,5 @@ if __name__ == "__main__":
     post_processor.move_linear(x=0, y=0, z=0, feedrate=1000)
     post_processor.add_end_seq()
 
-    # Save the G-Code to a file
+    # Save the G code to a file
     post_processor.save_to_file("output.nc")

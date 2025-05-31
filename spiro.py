@@ -26,7 +26,8 @@ class SpiroScribeApp(tk.Tk):
         self.title("SpiroScribe")
         self.resizable(False, False)  # prevent resizing (width and height)
 
-        self.origin_position = (2, 0)
+        self.origin_position = (1, 1)
+        self.workspace_dims = (32, 32)
 
         self.frame = tk.Frame(self)
         self.frame.grid(row=0, column=0, sticky="nsew")
@@ -108,15 +109,20 @@ class SpiroScribeApp(tk.Tk):
                 self.post_processor.add_comment(export_settings['start_sequence']['text'], apply_formatting=False)
                 self.post_processor.add_linebreak()
 
+            # Calculate origin offset.
+            offset = self.compute_origin_offset(self.origin_position, self.workspace_dims)
+
             # Add circles (if specified).
             if self.circles:
                 for circle in self.circles:
-                    self.post_processor.parse_circle(circle)
+                    self.post_processor.parse_circle(circle_data=circle)
                     self.post_processor.add_linebreak()
 
             # Add roulette (if specified).
             if self.roulette:
-                self.post_processor.parse_roulette(self.roulette, export_settings['toolpath_parameters'])
+                self.post_processor.parse_roulette(roulette_data=self.roulette,
+                                                   toolpath_data=export_settings['toolpath_parameters'],
+                                                   origin_offset=offset)
                 self.post_processor.add_linebreak()
 
             # Add end sequence (if specified).
@@ -129,6 +135,21 @@ class SpiroScribeApp(tk.Tk):
             # Save G code to file.
             self.post_processor.save_to_file(export_settings['file_path'])
 
+    def compute_origin_offset(self, origin_position, workspace_dims):
+        width, height = workspace_dims
+        offsets = {
+            (0, 0): (width / 2.0, -height / 2.0),   # top-left
+            (0, 1): (0, -height / 2.0),             # top-middle
+            (0, 2): (-width / 2.0, -height / 2.0),  # top-right
+            (1, 0): (width / 2.0, 0),               # center-left
+            (1, 1): (0, 0),                         # center
+            (1, 2): (-width / 2.0, 0),              # center-right
+            (2, 0): (width / 2.0, height / 2.0),    # bottom-left
+            (2, 1): (0, height / 2.0),              # bottom-middle
+            (2, 2): (-width / 2.0, height / 2.0),   # bottom-right
+        }
+        return offsets[origin_position]
+
     def open_settings_dialog(self):
         # Pass in initial values for the dialog
         dialog = SettingsDialog(self,
@@ -137,6 +158,7 @@ class SpiroScribeApp(tk.Tk):
                                 origin_position=self.canvas.origin_position
                                 )
         settings = dialog.get_settings()
+        self.origin_position = settings['origin_position']
         self.canvas.set_bg_color(settings['bg_color'])
         self.canvas.show_origin = settings['show_origin']
         self.canvas.origin_position = settings['origin_position']

@@ -15,7 +15,7 @@ class ExportGCodeDialog(tk.Toplevel):
         Dialog to generate G Code toolpaths.
 
         Args:
-            TODO
+            parent (tk.Tk): Parent tkinter application window.
         """
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
