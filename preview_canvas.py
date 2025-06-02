@@ -57,6 +57,21 @@ class PreviewCanvas(tk.Canvas):
             return
         self.pattern_linewidth = width
 
+    def is_pattern_empty(self, lst):
+        """
+        Determines if the pattern list is 'empty'. The list is considered empty if:
+        - It is an empty list [], or
+        - It contains only empty dictionaries [{}].
+
+        Args:
+            lst (list): The list to check.
+
+        Returns:
+            bool: True if the list is 'empty', False otherwise.
+        """
+        # Check if the list is empty or contains only empty dictionaries
+        return len(lst) == 0 or all(isinstance(item, dict) and not item for item in lst)
+
     def set_pattern(self, pattern):
         """
         Render multiple items on the canvas at once.
@@ -80,7 +95,8 @@ class PreviewCanvas(tk.Canvas):
         self.delete("all")  # Clear the canvas
 
         # Iterate through all elements in the pattern
-        if self.pattern:
+        print(self.pattern)
+        if not self.is_pattern_empty(self.pattern):
             for element in self.pattern:
                 if element['type'] == 'circle':
                     self._draw_circle(

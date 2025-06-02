@@ -122,12 +122,12 @@ class GCodePostProcessor:
             5) G01: Rapid Z to safe Z height.
 
         Arguments:
-            circle_data (dict): Dictionary of circle parameters.
+            circle_data (dict): Dictionary of circle parameters (defined in mm).
                                   example_data = {"type": "circle",
                                                   "x": 6.5,
                                                   "y": 2.5,
                                                   "radius": 1}
-            toolpath_data (dict): Dictionary of machining parameters.
+            toolpath_data (dict): Dictionary of machining parameters (defined in mm or in).
                                   example_data = {"units": "imperial",
                                                   "safe_z": 0.25,
                                                   "jog_feed_xyz": 8.0,
@@ -136,8 +136,8 @@ class GCodePostProcessor:
                                                   "depth_per_pass": 0.02,
                                                   "num_passes": 1,
                                                   "cut_res": 200}
-            origin_offset (tuple): X and Y amounts by which to translate pattern to account for
-                                   origin location (dX, dY).
+            origin_offset (tuple): X and Y amounts (defined in mm) by which to translate
+                                   pattern to account for origin location (dX, dY).
 
         Returns:
             None
@@ -147,12 +147,20 @@ class GCodePostProcessor:
         if circle_data.get("type") != "circle":
             raise ValueError("The input data is not a circle.")
 
-        # Extract circle parameters
-        center_x = circle_data["x"]
-        center_y = circle_data["y"]
-        radius = circle_data["radius"]
+        # Extract units.
+        units = toolpath_data['units']
 
-        # Extract toolpath parameters
+        # Extract circle parameters (defined in mm). Convert to inches if units not metric.
+        if units == "metric":
+            center_x = circle_data["x"]
+            center_y = circle_data["y"]
+            radius = circle_data["radius"]
+        else:
+            center_x = circle_data["x"] / 25.4
+            center_y = circle_data["y"] / 25.4
+            radius = circle_data["radius"] / 25.4
+
+        # Extract toolpath parameters (already in the correct units).
         safe_z = toolpath_data['safe_z']
         jog_feed_xyz = toolpath_data['jog_feed_xyz']
         cut_feed_xy = toolpath_data['cut_feed_xy']
@@ -160,16 +168,20 @@ class GCodePostProcessor:
         depth_per_pass = toolpath_data['depth_per_pass']
         num_passes = toolpath_data['num_passes']
 
-        # Extract origin offsets
-        offset_x, offset_y = origin_offset
+        # Extract origin offsets (defined in mm). Convert to inches if units not metric.
+        if units == "metric":
+            offset_x, offset_y = origin_offset
+        else:
+            offset_x = origin_offset(0) / 25.4
+            offset_y = origin_offset(1) / 25.4
 
-        # Calculate starting/ending point (left edge of the circle)
+        # Calculate starting/ending point (left edge of the circle).
         start_x = center_x - radius
         start_y = center_y
         start_x_offset = start_x + offset_x  # to account for origin location
         start_y_offset = start_y + offset_y  # to account for origin location
 
-        # Calculate center offsets relative to the starting point
+        # Calculate center offsets relative to the starting point.
         i_offset = radius  # radius units to the right of starting point
         j_offset = 0.0  # vertically aligned with starting point
 
@@ -207,14 +219,14 @@ class GCodePostProcessor:
             Repeat steps (2)-(6) for specified number of passes.
 
         Arguments:
-            roulette_data (dict): Dictionary of roulette parameters.
+            roulette_data (dict): Dictionary of roulette parameters (defined in mm).
                                   example_data = {"type": "roulette",
                                                   "R": 6.5,
                                                   "r": 2.5,
                                                   "s": 1,
                                                   "d": 3.5,
                                                   "display_res": 200}
-            toolpath_data (dict): Dictionary of machining parameters.
+            toolpath_data (dict): Dictionary of machining parameters (defined in mm or in).
                                   example_data = {"units": "imperial",
                                                   "safe_z": 0.25,
                                                   "jog_feed_xyz": 8.0,
@@ -223,8 +235,8 @@ class GCodePostProcessor:
                                                   "depth_per_pass": 0.02,
                                                   "num_passes": 1,
                                                   "cut_res": 200}
-            origin_offset (tuple): X and Y amounts by which to translate pattern to account for
-                                   origin location (dX, dY).
+            origin_offset (tuple): X and Y amounts (defined in mm) by which to translate
+                                   pattern to account for origin location (dX, dY).
 
         Returns:
             None
@@ -241,13 +253,22 @@ class GCodePostProcessor:
         if roulette_data.get("type") != "roulette":
             raise ValueError("The input data is not a roulette.")
 
-        # Extract roulette parameters
-        R = roulette_data["R"]
-        r = roulette_data["r"]
-        s = roulette_data["s"]
-        d = roulette_data["d"]
+        # Extract units.
+        units = toolpath_data['units']
 
-        # Extract toolpath parameters
+        # Extract roulette parameters (defined in mm). Convert to inches if units not metric.
+        if units == "metric":
+            R = roulette_data["R"]
+            r = roulette_data["r"]
+            s = roulette_data["s"]
+            d = roulette_data["d"]
+        else:
+            R = roulette_data["R"] / 25.4
+            r = roulette_data["r"] / 25.4
+            s = roulette_data["s"]
+            d = roulette_data["d"] / 25.4
+
+        # Extract toolpath parameters (already in correct units).
         safe_z = toolpath_data['safe_z']
         jog_feed_xyz = toolpath_data['jog_feed_xyz']
         cut_feed_xy = toolpath_data['cut_feed_xy']
@@ -256,24 +277,28 @@ class GCodePostProcessor:
         num_passes = toolpath_data['num_passes']
         cut_res = toolpath_data['cut_res']
 
-        # Extract origin offsets
-        offset_x, offset_y = origin_offset
+        # Extract origin offsets (defined in mm).
+        if units == "metric":
+            offset_x, offset_y = origin_offset
+        else:
+            offset_x = origin_offset(0) / 25.4
+            offset_y = origin_offset(1) / 25.4
 
-        # Add a comment for the roulette
+        # Add a comment for the roulette.
         self.add_comment(f"Roulette with parameters: R={R}, r={r}, s={s}, d={d}, res={cut_res}")
 
-        # Define R and r as fractions
+        # Define R and r as fractions.
         R = Fraction(R)
         r = Fraction(r)
 
-        # Compute the effective radius
+        # Compute the effective radius.
         effective_R = R + s * r
 
-        # Compute the GCD of the numerators and denominators
+        # Compute the GCD of the numerators and denominators.
         numerator_gcd = math.gcd(r.numerator, effective_R.numerator)
         denominator_lcm = (r.denominator * effective_R.denominator) // math.gcd(r.denominator, effective_R.denominator)
 
-        # Simplify the GCD as a fraction
+        # Simplify the GCD as a fraction.
         gcd_fraction = Fraction(numerator_gcd, denominator_lcm)
 
         # Calculate the number of turns needed to close the path.

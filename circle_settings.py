@@ -66,13 +66,17 @@ class CircleSettings(tk.Frame):
 
     def get_ring_data(self):
         """
-        Generate pattern data for the widgets.
+        Generate pattern data from the current widget values.
 
         Arguments:
             None
 
         Returns:
-            list (Dict): A list of drawing elements defined in mm.
+            data (list): A list of circle elements (dicts) defined in mm.
+                         example_element = {"type": "circle",
+                                            "x": 6.5,
+                                            "y": 2.5,
+                                            "radius": 1}
         """
         data = []
         for row_widgets in self.widgets:
@@ -87,7 +91,7 @@ class CircleSettings(tk.Frame):
                 for theta in angles:
                     x = ring_radius * np.cos(theta)
                     y = ring_radius * np.sin(theta)
-                    data.append({'type': 'circle', 'x': x, 'y': y, 'radius': circle_radius})
+                    data.append({'type': 'circle', 'x': float(x), 'y': float(y), 'radius': float(circle_radius)})
 
         return data
 
