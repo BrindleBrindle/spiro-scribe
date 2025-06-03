@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import colorchooser  # for the color picker
-# Gold color: "#FFDB2F"
 
 
 class WorkspaceSettings(tk.Frame):

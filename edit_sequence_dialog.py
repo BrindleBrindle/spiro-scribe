@@ -5,11 +5,12 @@ import standard_sequences as sseq
 class EditSequenceDialog(tk.Toplevel):
     def __init__(self, parent, default_content="", initial_content="", *args, **kwargs):
         """
-        Dialog to configure sequence text.
+        Dialog for editing blocks of sequence text.
 
-        Args:
+        Arguments:
             parent (tk.Tk): Parent window.
-            content (str): Current content.
+            default_content (str): Text to display when the Refresh button is pressed.
+            initial_content (str): Text to display when the dialog is raised.
         """
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
@@ -84,7 +85,7 @@ class EditSequenceDialog(tk.Toplevel):
 
     def on_text_change(self, event):
         """
-        Re-enables the Refresh button when the Text widget content is modified.
+        Re-enable the Refresh button when the Text widget content is modified.
         """
         # Enable the button only if the content has been modified
         if self.textbox.edit_modified():
@@ -93,7 +94,7 @@ class EditSequenceDialog(tk.Toplevel):
 
     def refresh(self):
         """
-        Restores the default content in the Text widget and disables the button.
+        Restore the default content in the Text widget and disable the button.
         """
         # Reset the <<Modified>> event flag.
         self.textbox.edit_modified(False)
@@ -109,23 +110,29 @@ class EditSequenceDialog(tk.Toplevel):
         self.textbox.edit_modified(False)
 
     def ok(self, event=None):
+        """
+        Accept current text and then close.
+        """
         self.new_content = self.textbox.get("1.0", tk.END).strip()
         self.close()
 
     def cancel(self, event=None):
+        """
+        Restore initial text and then close.
+        """
         self.new_content = self.initial_content
         self.close()
 
     def close(self, event=None):
-        """Return focus to the parent window and close."""
+        """
+        Return focus to the parent window and then destroy the dialog.
+        """
         if self.parent is not None:
             self.parent.focus_set()
         tk.Toplevel.destroy(self)
 
     def get_settings(self):
-        """
-        Return the final content of the Text widget.
-        """
+        """Return the final content of the Text widget."""
         return self.new_content
 
 
