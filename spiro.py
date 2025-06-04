@@ -6,6 +6,7 @@ from post_processor import GCodePostProcessor
 from settings_dialog import SettingsDialog
 from info_dialog import InfoDialog
 from status_bar import StatusBar
+from export_svg_dialog import ExportSVGDialog
 from export_gcode_dialog import ExportGCodeDialog
 from PIL import Image, ImageTk
 
@@ -87,7 +88,16 @@ class SpiroScribeApp(tk.Tk):
         self.canvas.refresh_pattern()
 
     def open_export_svg_dialog(self):
-        pass
+        # Open Export SVG dialog.
+        # TODO: Pass in initial values for the dialog.
+        dialog = ExportSVGDialog(self)
+
+        # Retrieve settings from dialog.
+        export_settings = dialog.get_settings()
+
+        # Export SVG file if settings are not empty.
+        if export_settings:
+            pass
 
     def open_export_gcode_dialog(self):
         # Open Export G Code dialog.

@@ -110,7 +110,7 @@ class ExportSVGDialog(tk.Toplevel):
         """
         Convert a value to the specified unit system.
 
-        Args:
+        Arguments:
             value (float): The value in the current unit system.
             units (str): The target unit system, either "metric" or "imperial".
 
@@ -128,7 +128,7 @@ class ExportSVGDialog(tk.Toplevel):
         """
         Validates the input to ensure it is a valid float number.
 
-        Args:
+        Arguments:
             new_value (str): The current value of the Entry widget after the change.
 
         Returns:
