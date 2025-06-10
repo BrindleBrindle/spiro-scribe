@@ -70,7 +70,6 @@ class SpiroScribeApp(tk.Tk):
             height=400,
             mm_to_px_ratio=15,
         )
-        # self.canvas.grid_propagate(False)
         self.canvas.grid(row=1, column=0, padx=(5, 5), pady=(0, 0))
 
         self.status_bar = StatusBar(self.frame, self.canvas, width_mm=32, height_mm=32, width_px=400)

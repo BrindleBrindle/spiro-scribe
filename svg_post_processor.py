@@ -8,10 +8,11 @@ class SVGPostProcessor:
         """
         Converter to translate Circle and Roulette patterns into vector graphics (SVG format).
 
-        Arguments:
+        Args:
             svg_data (dict): Dictionary of SVG document parameters.
                                   example_data = {"doc_width": 500,
                                                   "doc_height": 500,
+                                                  "doc_units": "mm",
                                                   "stroke_color": "black",
                                                   "stroke_width": 1,
                                                   "pattern_fill": "none",
@@ -21,6 +22,7 @@ class SVGPostProcessor:
         # Extract settings from dictionary. Use default values if keys are missing.
         defaults = {"doc_width": 500,
                     "doc_height": 500,
+                    "doc_units": "mm",
                     "stroke_color": "black",
                     "stroke_width": 2,
                     "pattern_fill": "none",
@@ -37,7 +39,7 @@ class SVGPostProcessor:
         Parse multiple circles at once into SVG <circle> elements.
         Add them to the list of drawing elements.
 
-        Arguments:
+        Args:
             circles (list): List of circles (in dictionary form) to add to the SVG document.
                             example_data = [{"type": "circle", "x": 6.5, "y": 2.5, "radius": 1},
                                             {"type": "circle", "x": 3.5, "y": 4, "radius": 3}]
@@ -53,7 +55,7 @@ class SVGPostProcessor:
         Parse a circle dictionary into a corresponding SVG <circle> element.
         Add it to the list of drawing elements.
 
-        Arguments:
+        Args:
             circle_data (dict): Dictionary of circle parameters (defined in mm).
                                 example_data = {"type": "circle", "x": 6.5, "y": 2.5, "radius": 1}
         """
@@ -80,7 +82,7 @@ class SVGPostProcessor:
         Parse a roulette dictionary into a corresponding SVG <path> element.
         Add it to the list of drawing elements.
 
-        Arguments:
+        Args:
             roulette_data (dict): Dictionary of roulette parameters (defined in mm).
                                   example_data = {"type": "roulette", "R": 6.5, "r": 2.5, "s": 1, "d": 3.5}
         """
@@ -148,13 +150,15 @@ class SVGPostProcessor:
         """
         Generate the SVG string for the entire document and save it to a file.
         
-        Arguments:
+        Args:
             filename (str): Name of the file to save the SVG.
         """
         with open(filename, "w") as file:
             elements_svg = "\n".join([element.to_svg() for element in self.elements])
-            doc_string = (f'<svg width="{self.doc_width}" height="{self.doc_height}" '
+            background_svg = '<rect width="100%" height="100%" fill="peachpuff"/>'
+            doc_string = (f'<svg width="{self.doc_width}{self.doc_units}" height="{self.doc_height}{self.doc_units}" '
                           f'xmlns="http://www.w3.org/2000/svg" version="1.1">\n'
+                          f'{background_svg}\n'
                           f'{elements_svg}\n</svg>')
             file.write(doc_string)
 
@@ -174,7 +178,7 @@ class SVGCircle:
     """
     Represents an SVG <circle> element.
     """
-    def __init__(self, r, cx=0, cy=0, stroke_color="black", stroke_width=1, fill="none"):
+    def __init__(self, r, cx=0, cy=0, units="mm", stroke_color="black", stroke_width=1, fill="none"):
         """
         Initialize a circle element with optional stroke, fill, and stroke width.
         
@@ -182,6 +186,7 @@ class SVGCircle:
             r (float): Radius of the circle.
             cx (float): X-axis center of the circle (default: 0).
             cy (float): Y-axis center of the circle (default: 0).
+            units (str): Units, either "mm" or "in" (default: "mm").
             stroke_color (str): Stroke color of the circle (default: "black").
             stroke_width (int): Stroke width of the circle (default: 1).
             fill (str): Fill color of the circle (default: "none").
@@ -189,6 +194,7 @@ class SVGCircle:
         self.r = r
         self.cx = cx
         self.cy = cy
+        self.units = units
         self.stroke_color = stroke_color
         self.stroke_width = stroke_width
         self.fill = fill
@@ -201,7 +207,7 @@ class SVGCircle:
             str: The SVG representation of the circle.
         """
         return (
-            f'<circle\n\tr="{self.r}"\n\tcx="{self.cx}"\n\tcy="{self.cy}"'
+            f'<circle\n\tr="{self.r}{self.units}"\n\tcx="{self.cx}{self.units}"\n\tcy="{self.cy}{self.units}"'
             f'\n\tstroke="{self.stroke_color}"\n\tstroke-width="{self.stroke_width}"'
             f'\n\tfill="{self.fill}" />'
         )
@@ -277,7 +283,7 @@ class SVGPath:
 # Example usage
 if __name__ == "__main__":
     # Example SVG data.
-    svg_data = {"doc_width": 100, "doc_height": 100}
+    svg_data = {"doc_width": 100, "doc_height": 100, "doc_units": "mm", "stroke_color": "slategray"}
 
     # Create an instance of the post processor.
     post_processor = SVGPostProcessor(svg_data)
