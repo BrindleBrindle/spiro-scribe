@@ -4,69 +4,86 @@ from fractions import Fraction
 
 
 class SVGPostProcessor:
-    """
-    Converts provided Circle and Roulette patterns into vector graphics (SVG format).
-    """
-    def __init__(self):
-        # Create an SVG document
-        self.doc = SVGDocument(500, 500)  # SVG document
+    def __init__(self, svg_data={}):
+        """
+        Converter to translate Circle and Roulette patterns into vector graphics (SVG format).
 
-    def parse_circle_array(self):
-        # TODO: Fill in code here.
-        pass
+        Arguments:
+            svg_data (dict): Dictionary of SVG document parameters.
+                                  example_data = {"doc_width": 500,
+                                                  "doc_height": 500,
+                                                  "stroke_color": "black",
+                                                  "stroke_width": 1,
+                                                  "pattern_fill": "none",
+                                                  "include_data": True,
+                                                  "display_res": 200}
+        """
+        # Extract settings from dictionary. Use default values if keys are missing.
+        defaults = {"doc_width": 500,
+                    "doc_height": 500,
+                    "stroke_color": "black",
+                    "stroke_width": 2,
+                    "pattern_fill": "none",
+                    "include_data": False,
+                    "display_res": 200}
+        for key, default in defaults.items():
+            setattr(self, key, svg_data.get(key, default))
 
-    def parse_circle(self, circle_data, svg_data):
+        # Create a list to store SVG drawing elements.
+        self.elements = []
+
+    def parse_circle_array(self, circles):
+        """
+        Parse multiple circles at once into SVG <circle> elements.
+        Add them to the list of drawing elements.
+
+        Arguments:
+            circles (list): List of circles (in dictionary form) to add to the SVG document.
+                            example_data = [{"type": "circle", "x": 6.5, "y": 2.5, "radius": 1},
+                                            {"type": "circle", "x": 3.5, "y": 4, "radius": 3}]
+        """
+        for circle in circles:
+            try:
+                self.parse_circle(circle)
+            except Exception:
+                print("Error in parsing circle array.")
+
+    def parse_circle(self, circle_data):
         """
         Parse a circle dictionary into a corresponding SVG <circle> element.
+        Add it to the list of drawing elements.
 
         Arguments:
             circle_data (dict): Dictionary of circle parameters (defined in mm).
-                                  example_data = {"type": "circle",
-                                                  "x": 6.5,
-                                                  "y": 2.5,
-                                                  "radius": 1}
-            svg_data (dict): Dictionary of SVG output parameters. TODO: Show example data here.
-
-        Returns:
-            None
+                                example_data = {"type": "circle", "x": 6.5, "y": 2.5, "radius": 1}
         """
+        # Check for missing dictionary keys.
+        required_keys = ["type", "x", "y", "radius"]
+        missing_keys = [key for key in required_keys if key not in circle_data]
+        if missing_keys:
+            raise Exception(f"Missing required keys: {', '.join(missing_keys)}")
 
-        # Ensure the input is a circle
-        if circle_data.get("type") != "circle":
+        # Create SVG element and add it to the element list.
+        if circle_data.get("type") == "circle":
+            circle = SVGCircle(r=circle_data["radius"],
+                               cx=circle_data["x"],
+                               cy=circle_data["y"],
+                               stroke_color=self.stroke_color,
+                               stroke_width=self.stroke_width,
+                               fill=self.pattern_fill)
+            self.elements.append(circle)
+        else:
             raise ValueError("The input data is not a circle.")
 
-        # Extract circle parameters (defined in mm).
-        center_x = circle_data["x"]
-        center_y = circle_data["y"]
-        radius = circle_data["radius"]
-
-        # TODO: Extract SVG parameters.
-        # Add SVG parameters:
-        #   - stroke_color
-        #   - stroke_width
-        #   - fill
-
-        circle = SVGCircle(r=radius, cx=center_x, cy=center_y, stroke_color="black", stroke_width=1, fill="none")
-        self.doc.add_element(circle)
-
-    def parse_roulette(self, roulette_data, svg_data):
+    def parse_roulette(self, roulette_data):
         """
         Parse a roulette dictionary into a corresponding SVG <path> element.
+        Add it to the list of drawing elements.
 
         Arguments:
             roulette_data (dict): Dictionary of roulette parameters (defined in mm).
-                                  example_data = {"type": "roulette",
-                                                  "R": 6.5,
-                                                  "r": 2.5,
-                                                  "s": 1,
-                                                  "d": 3.5,
-                                                  "display_res": 200}
-            svg_data (dict): Dictionary of SVG output parameters. TODO: Show example data here.
-
-        Returns:
-            None
+                                  example_data = {"type": "roulette", "R": 6.5, "r": 2.5, "s": 1, "d": 3.5}
         """
-
         def compute_point(theta):
             """Helper function to compute the (x, y) point for a given theta."""
             factor = (R + s * r)
@@ -74,60 +91,83 @@ class SVGPostProcessor:
             y = factor * np.sin(theta) - d * np.sin(theta * factor / r)
             return x, y
 
-        # Ensure the input is a roulette
-        if roulette_data.get("type") != "roulette":
+        def lcm(a, b):
+            """Helper function to compute the least common multiple of two numbers."""
+            return (a * b) // math.gcd(a, b)
+
+        # Check for missing dictionary keys.
+        required_keys = ["type", "R", "r", "s", "d"]
+        missing_keys = [key for key in required_keys if key not in roulette_data]
+        if missing_keys:
+            raise Exception(f"Missing required keys: {', '.join(missing_keys)}")
+
+        # Create SVG element and add it to the element list.
+        if roulette_data.get("type") == "roulette":
+            # Extract roulette parameters.
+            R = Fraction(roulette_data["R"])  # define as fraction
+            r = Fraction(roulette_data["r"])  # define as fraction
+            s = roulette_data["s"]
+            d = roulette_data["d"]
+            display_res = self.display_res
+
+            # Compute the effective radius.
+            effective_R = R + s * r
+
+            # Compute the GCD of the numerators and the LCM of the denominators.
+            numerator_gcd = math.gcd(r.numerator, effective_R.numerator)
+            denominator_lcm = lcm(r.denominator, effective_R.denominator)
+
+            # Simplify as a fraction.
+            gcd_fraction = Fraction(numerator_gcd, denominator_lcm)
+
+            # Calculate the number of turns needed to close the path.
+            n_turns = r / gcd_fraction
+            total_angle = n_turns * 2 * np.pi
+            thetas = np.linspace(0, total_angle, display_res, endpoint=False)
+
+            # Create a new path element and move to the starting point.
+            path = SVGPath(stroke_color=self.stroke_color, stroke_width=self.stroke_width, fill=self.pattern_fill)
+            start_x, start_y = compute_point(thetas[0])
+            path.move_to(start_x, start_y)
+
+            # Make line segments between successive XY locations.
+            for theta in thetas[1:]:
+                next_x, next_y = compute_point(theta)
+                path.line_to(next_x, next_y)
+
+            # Close the pattern by moving back to the start.
+            path.close_path()
+
+            # Add the finished path to the list of drawing elements. 
+            self.elements.append(path)
+
+        else:
             raise ValueError("The input data is not a roulette.")
 
-        # Extract roulette parameters (defined in mm).
-        R = roulette_data["R"]
-        r = roulette_data["r"]
-        s = roulette_data["s"]
-        d = roulette_data["d"]
-        cut_res = 200  # TODO: replace
+    def save(self, filename):
+        """
+        Generate the SVG string for the entire document and save it to a file.
+        
+        Arguments:
+            filename (str): Name of the file to save the SVG.
+        """
+        with open(filename, "w") as file:
+            elements_svg = "\n".join([element.to_svg() for element in self.elements])
+            doc_string = (f'<svg width="{self.doc_width}" height="{self.doc_height}" '
+                          f'xmlns="http://www.w3.org/2000/svg" version="1.1">\n'
+                          f'{elements_svg}\n</svg>')
+            file.write(doc_string)
 
-        # TODO: Extract SVG parameters.
-        # Add SVG parameters:
-        #   - stroke_color
-        #   - stroke_width
-        #   - fill
-        #   - roulette resolution
 
-        # Define R and r as fractions.
-        R = Fraction(R)
-        r = Fraction(r)
+class SVGTextBox:
+    """
+    Displays data about an SVG drawing element.
+    """
+    def __init__(self):
+        pass
 
-        # Compute the effective radius.
-        effective_R = R + s * r
-
-        # Compute the GCD of the numerators and denominators.
-        numerator_gcd = math.gcd(r.numerator, effective_R.numerator)
-        denominator_lcm = (r.denominator * effective_R.denominator) // math.gcd(r.denominator, effective_R.denominator)
-
-        # Simplify the GCD as a fraction.
-        gcd_fraction = Fraction(numerator_gcd, denominator_lcm)
-
-        # Calculate the number of turns needed to close the path.
-        n_turns = r / gcd_fraction
-        total_angle = n_turns * 2 * np.pi
-        thetas = np.linspace(0, total_angle, cut_res, endpoint=False)
-
-        # Compute the starting point.
-        start_x, start_y = compute_point(thetas[0])
-
-        # Create a new path element and move to the starting point.
-        path = SVGPath(stroke_color="blue", fill="none", stroke_width=2)
-        path.move_to(start_x, start_y)
-
-        # Move to the next XY location.
-        for theta in thetas[1:]:
-            next_x, next_y = compute_point(theta)
-            path.line_to(next_x, next_y)
-
-        # Close the pattern by moving back to the starting point.
-        path.close_path()
-
-        # Add the finished path to the list of elements in the document. 
-        self.doc.add_element(path)
+    def to_svg(self):
+        pass
 
 
 class SVGCircle:
@@ -234,82 +274,23 @@ class SVGPath:
         )
 
 
-class SVGDocument:
-    """
-    Represents an SVG document.
-    """
-    def __init__(self, width, height):
-        """
-        Initialize the SVG document with dimensions.
-        
-        Args:
-            width (int): Width of the SVG canvas.
-            height (int): Height of the SVG canvas.
-        """
-        self.width = width
-        self.height = height
-        self.elements = []  # list to store drawing elements (<path> or <circle>)
-
-    def add_element(self, e):
-        """
-        Add a pre-constructed SVGPath or SVGCircle object to the document.
-        
-        Args:
-            e (SVGPath or SVGCircle): The drawing object to add.
-        """
-        self.paths.append(e)
-
-    def save(self, filename):
-        """
-        Save the SVG document to a file.
-        
-        Args:
-            filename (str): Name of the file to save the SVG.
-        """
-        with open(filename, "w") as file:
-            file.write(self.to_svg())
-
-    def to_svg(self):
-        """
-        Generate the SVG string for the entire document.
-        
-        Returns:
-            str: The SVG representation of the document.
-        """
-        paths_svg = "\n".join([path.to_svg() for path in self.paths])
-        return (
-            f'<svg width="{self.width}" height="{self.height}" '
-            f'xmlns="http://www.w3.org/2000/svg" version="1.1">\n'
-            f'{paths_svg}\n</svg>'
-        )
-
-
 # Example usage
 if __name__ == "__main__":
-    # Create an SVG document
-    doc = SVGDocument(500, 500)
+    # Example SVG data.
+    svg_data = {"doc_width": 100, "doc_height": 100}
 
-    # Create a path and incrementally add commands
-    path1 = SVGPath(stroke_color="blue", stroke_width=2, fill="none")
-    path1.move_to(10, 10)      # Absolute move to (10, 10)
-    path1.line_to(100, 10)     # Absolute line to (100, 10)
-    path1.vertical_to(100)     # Absolute vertical line to y=100
-    path1.horizontal_to(10)    # Absolute horizontal line to x=10
-    path1.close_path()         # Close the path (Z)
+    # Create an instance of the post processor.
+    post_processor = SVGPostProcessor(svg_data)
 
-    # Create another path
-    path2 = SVGPath(stroke_color="red", stroke_width=1, fill="none")
-    path2.move_to(150, 150)    # Absolute move to (150, 150)
-    path2.line_by(50, 0)       # Relative line by (50, 0)
-    path2.vertical_by(50)      # Relative vertical line by 50
-    path2.horizontal_by(-50)   # Relative horizontal line by -50
-    path2.close_path()         # Close the path (z)
+    # Create example patterns.
+    example_circle = {"type": "circle", "x": 50, "y": 50, "radius": 10}
+    # example_roulette = {"type": "roulette", "R": 6.5, "r": 2.5, "s": 1, "d": 3.5}
 
-    # Add the paths to the document
-    doc.add_element(path1)
-    doc.add_element(path2)
+    # Parse the patterns.
+    post_processor.parse_circle(example_circle)
+    # post_processor.parse_roulette(example_roulette)
 
-    # Save the SVG document
-    doc.save("svg_with_path_commands.svg")
+    # Save the SVG document.
+    post_processor.save("svg_with_example_patterns.svg")
 
-    print("SVG file 'svg_with_path_commands.svg' has been created!")
+    print("SVG file 'svg_with_example_patterns.svg' has been created!")

@@ -3,6 +3,7 @@ import os
 from user_controls import UserControlsPane
 from preview_canvas import PreviewCanvas
 from gcode_post_processor import GCodePostProcessor
+from svg_post_processor import SVGPostProcessor
 from settings_dialog import SettingsDialog
 from info_dialog import InfoDialog
 from status_bar import StatusBar
@@ -77,7 +78,6 @@ class SpiroScribeApp(tk.Tk):
 
         self.user_controls = UserControlsPane(self.frame)
         self.user_controls.grid(row=3, column=0, padx=(5, 5), pady=(10, 5), sticky="nsew")
-        self.post_processor = GCodePostProcessor()
 
         # Bind to widget custom events
         self.bind("<<BackgroundColorAction>>", self.handle_background_color_event)
@@ -97,7 +97,17 @@ class SpiroScribeApp(tk.Tk):
 
         # Export SVG file if settings are not empty.
         if export_settings:
-            pass
+            # Initialize instance of SVG post processor.
+            post_processor = SVGPostProcessor()
+
+            # Add circles (if specified).
+            if self.circles:
+                for circle in self.circles:
+                    post_processor.parse_circle(circle_data=circle)
+
+            # Add roulette (if specified).
+            if self.roulette:
+                post_processor.parse_roulette(roulette_data=self.roulette)
 
     def open_export_gcode_dialog(self):
         # Open Export G Code dialog.
@@ -109,15 +119,18 @@ class SpiroScribeApp(tk.Tk):
 
         # Export G code if settings are not empty.
         if export_settings:
+            # Initialize instance of G code post processor.
+            post_processor = GCodePostProcessor()
+
             # Add title comment (if specified).
             if export_settings['title_comment']['include']:
-                self.post_processor.add_comment(export_settings['title_comment']['text'], apply_formatting=False)
-                self.post_processor.add_linebreak()
+                post_processor.add_comment(export_settings['title_comment']['text'], apply_formatting=False)
+                post_processor.add_linebreak()
 
             # Add start sequence (if specified).
             if export_settings['start_sequence']['include']:
-                self.post_processor.add_comment(export_settings['start_sequence']['text'], apply_formatting=False)
-                self.post_processor.add_linebreak()
+                post_processor.add_comment(export_settings['start_sequence']['text'], apply_formatting=False)
+                post_processor.add_linebreak()
 
             # Calculate origin offset.
             offset = self.compute_origin_offset(self.origin_position, self.workspace_dims)
@@ -125,25 +138,25 @@ class SpiroScribeApp(tk.Tk):
             # Add circles (if specified).
             if self.circles:
                 for circle in self.circles:
-                    self.post_processor.parse_circle(circle_data=circle)
-                    self.post_processor.add_linebreak()
+                    post_processor.parse_circle(circle_data=circle)
+                    post_processor.add_linebreak()
 
             # Add roulette (if specified).
             if self.roulette:
-                self.post_processor.parse_roulette(roulette_data=self.roulette,
-                                                   toolpath_data=export_settings['toolpath_parameters'],
-                                                   origin_offset=offset)
-                self.post_processor.add_linebreak()
+                post_processor.parse_roulette(roulette_data=self.roulette,
+                                              toolpath_data=export_settings['toolpath_parameters'],
+                                              origin_offset=offset)
+                post_processor.add_linebreak()
 
             # Add end sequence (if specified).
             if export_settings['end_sequence']['include']:
                 safe_z = export_settings['toolpath_parameters']['safe_z']
                 end_sequence_unformatted = export_settings['end_sequence']['text']
                 end_sequence_formatted = end_sequence_unformatted.replace("<safe_Z>", f"{safe_z}")
-                self.post_processor.add_comment(end_sequence_formatted, apply_formatting=False)
+                post_processor.add_comment(end_sequence_formatted, apply_formatting=False)
 
             # Save G code to file.
-            self.post_processor.save_to_file(export_settings['file_path'])
+            post_processor.save_to_file(export_settings['file_path'])
 
     def compute_origin_offset(self, origin_position, workspace_dims):
         width, height = workspace_dims
