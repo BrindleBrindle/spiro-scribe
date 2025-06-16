@@ -249,6 +249,10 @@ class GCodePostProcessor:
             y = factor * np.sin(theta) - d * np.sin(theta * factor / r)
             return x, y
 
+        def lcm(a, b):
+            """Helper function to compute the least common multiple of two numbers."""
+            return (a * b) // math.gcd(a, b)
+
         # Ensure the input is a roulette
         if roulette_data.get("type") != "roulette":
             raise ValueError("The input data is not a roulette.")
@@ -294,9 +298,12 @@ class GCodePostProcessor:
         # Compute the effective radius.
         effective_R = R + s * r
 
-        # Compute the GCD of the numerators and denominators.
+        # Compute the GCD of the numerators and the LCM of the denominators.
         numerator_gcd = math.gcd(r.numerator, effective_R.numerator)
-        denominator_lcm = (r.denominator * effective_R.denominator) // math.gcd(r.denominator, effective_R.denominator)
+        denominator_lcm = lcm(r.denominator, effective_R.denominator)
+
+        # Simplify as a fraction.
+        gcd_fraction = Fraction(numerator_gcd, denominator_lcm)
 
         # Simplify the GCD as a fraction.
         gcd_fraction = Fraction(numerator_gcd, denominator_lcm)

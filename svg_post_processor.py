@@ -24,10 +24,10 @@ class SVGPostProcessor:
                     "doc_height": 500,
                     "doc_units": "mm",
                     "stroke_color": "black",
-                    "stroke_width": 2,
+                    "stroke_width": 0.5,
                     "pattern_fill": "none",
                     "include_data": False,
-                    "display_res": 200}
+                    "display_res": 1000}
         for key, default in defaults.items():
             setattr(self, key, svg_data.get(key, default))
 
@@ -130,12 +130,16 @@ class SVGPostProcessor:
             # Create a new path element and move to the starting point.
             path = SVGPath(stroke_color=self.stroke_color, stroke_width=self.stroke_width, fill=self.pattern_fill)
             start_x, start_y = compute_point(thetas[0])
-            path.move_to(start_x, start_y)
+            start_x_offset = start_x + self.doc_width / 2.0  # offset to middle of canvas
+            start_y_offset = start_y + self.doc_height / 2.0  # offset to middle of canvas
+            path.move_to(start_x_offset, start_y_offset)
 
             # Make line segments between successive XY locations.
             for theta in thetas[1:]:
                 next_x, next_y = compute_point(theta)
-                path.line_to(next_x, next_y)
+                next_x_offset = next_x + self.doc_width / 2.0  # offset to middle of canvas
+                next_y_offset = next_y + self.doc_height / 2.0  # offset to middle of canvas
+                path.line_to(next_x_offset, next_y_offset)
 
             # Close the pattern by moving back to the start.
             path.close_path()
@@ -157,6 +161,7 @@ class SVGPostProcessor:
             elements_svg = "\n".join([element.to_svg() for element in self.elements])
             background_svg = '<rect width="100%" height="100%" fill="peachpuff"/>'
             doc_string = (f'<svg width="{self.doc_width}{self.doc_units}" height="{self.doc_height}{self.doc_units}" '
+                          f'viewBox="0 0 {self.doc_width} {self.doc_height}" '
                           f'xmlns="http://www.w3.org/2000/svg" version="1.1">\n'
                           f'{background_svg}\n'
                           f'{elements_svg}\n</svg>')
@@ -167,18 +172,20 @@ class SVGTextBox:
     """
     Displays data about an SVG drawing element.
     """
-    def __init__(self):
-        pass
+    def __init__(self, text):
+        self.text = text
 
     def to_svg(self):
-        pass
+        return (
+            f'<text x="5" y="15" fill="black">{self.text}</text>'
+        )
 
 
 class SVGCircle:
     """
     Represents an SVG <circle> element.
     """
-    def __init__(self, r, cx=0, cy=0, units="mm", stroke_color="black", stroke_width=1, fill="none"):
+    def __init__(self, r, cx=0, cy=0, stroke_color="black", stroke_width=2, fill="none"):
         """
         Initialize a circle element with optional stroke, fill, and stroke width.
         
@@ -186,7 +193,6 @@ class SVGCircle:
             r (float): Radius of the circle.
             cx (float): X-axis center of the circle (default: 0).
             cy (float): Y-axis center of the circle (default: 0).
-            units (str): Units, either "mm" or "in" (default: "mm").
             stroke_color (str): Stroke color of the circle (default: "black").
             stroke_width (int): Stroke width of the circle (default: 1).
             fill (str): Fill color of the circle (default: "none").
@@ -194,7 +200,6 @@ class SVGCircle:
         self.r = r
         self.cx = cx
         self.cy = cy
-        self.units = units
         self.stroke_color = stroke_color
         self.stroke_width = stroke_width
         self.fill = fill
@@ -207,7 +212,7 @@ class SVGCircle:
             str: The SVG representation of the circle.
         """
         return (
-            f'<circle\n\tr="{self.r}{self.units}"\n\tcx="{self.cx}{self.units}"\n\tcy="{self.cy}{self.units}"'
+            f'<circle\n\tr="{self.r}"\n\tcx="{self.cx}"\n\tcy="{self.cy}"'
             f'\n\tstroke="{self.stroke_color}"\n\tstroke-width="{self.stroke_width}"'
             f'\n\tfill="{self.fill}" />'
         )
@@ -233,35 +238,35 @@ class SVGPath:
 
     # Move To (M) - Absolute
     def move_to(self, x, y):
-        self.d += f"\t\tM{x} {y} \n"
+        self.d += f"\t\tM {x} {y} \n"
 
     # Move To (m) - Relative
     def move_by(self, dx, dy):
-        self.d += f"\t\tm{dx} {dy} \n"
+        self.d += f"\t\tm {dx} {dy} \n"
 
     # Line To (L) - Absolute
     def line_to(self, x, y):
-        self.d += f"\t\tL{x} {y} \n"
+        self.d += f"\t\tL {x} {y} \n"
 
     # Line To (l) - Relative
     def line_by(self, dx, dy):
-        self.d += f"\t\tl{dx} {dy} \n"
+        self.d += f"\t\tl {dx} {dy} \n"
 
     # Horizontal Line To (H) - Absolute
     def horizontal_to(self, x):
-        self.d += f"\t\tH{x} \n"
+        self.d += f"\t\tH {x} \n"
 
     # Horizontal Line To (h) - Relative
     def horizontal_by(self, dx):
-        self.d += f"\t\th{dx} \n"
+        self.d += f"\t\th {dx} \n"
 
     # Vertical Line To (V) - Absolute
     def vertical_to(self, y):
-        self.d += f"\t\tV{y} \n"
+        self.d += f"\t\tV {y} \n"
 
     # Vertical Line To (v) - Relative
     def vertical_by(self, dy):
-        self.d += f"\t\tv{dy} \n"
+        self.d += f"\t\tv {dy} \n"
 
     # Close Path (Z or z)
     def close_path(self):
@@ -283,18 +288,16 @@ class SVGPath:
 # Example usage
 if __name__ == "__main__":
     # Example SVG data.
-    svg_data = {"doc_width": 100, "doc_height": 100, "doc_units": "mm", "stroke_color": "slategray"}
+    svg_data = {"doc_width": 32, "doc_height": 32, "doc_units": "mm", "stroke_color": "slategray"}
 
     # Create an instance of the post processor.
     post_processor = SVGPostProcessor(svg_data)
 
-    # Create example patterns.
-    example_circle = {"type": "circle", "x": 50, "y": 50, "radius": 10}
-    # example_roulette = {"type": "roulette", "R": 6.5, "r": 2.5, "s": 1, "d": 3.5}
+    # Create example pattern.
+    example_roulette = {"type": "roulette", "R": 5.5, "r": 2.5, "s": 1, "d": 3.5}
 
-    # Parse the patterns.
-    post_processor.parse_circle(example_circle)
-    # post_processor.parse_roulette(example_roulette)
+    # Parse the pattern.
+    post_processor.parse_roulette(example_roulette)
 
     # Save the SVG document.
     post_processor.save("svg_with_example_patterns.svg")
