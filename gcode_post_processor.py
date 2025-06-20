@@ -108,6 +108,10 @@ class GCodePostProcessor:
         # Append the generated command to the G code list
         self.gcode.append(command)
 
+    def parse_circle_array(self):
+        """ TODO: Add function contents here."""
+        pass
+
     def parse_circle(self, circle_data, toolpath_data, origin_offset):
         """
         Parse a circle dictionary into a series of G code moves.

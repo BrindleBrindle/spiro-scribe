@@ -10,8 +10,8 @@ class SVGPostProcessor:
 
         Args:
             svg_data (dict): Dictionary of SVG document parameters.
-                                  example_data = {"svg_width": 500,
-                                                  "svg_height": 500,
+                                  example_data = {"svg_width": 400,
+                                                  "svg_height": 400,
                                                   "workspace_width": 32,
                                                   "workspace_height": 32,
                                                   "workspace_units": 'mm',
@@ -21,8 +21,8 @@ class SVGPostProcessor:
                                                   "path_resolution": 200}
         """
         # Extract settings from dictionary. Use default values if keys are missing.
-        defaults = {"svg_width": 500,
-                    "svg_height": 500,
+        defaults = {"svg_width": 400,
+                    "svg_height": 400,
                     "workspace_width": 32,
                     "workspace_height": 32,
                     "workspace_units": 'mm',
@@ -37,6 +37,20 @@ class SVGPostProcessor:
         self.pattern_svg = ''
         self.parameters_svg = ''
 
+    def parse_pattern(self, pattern):
+        """
+        TODO: Add a function description here.
+
+        Args:
+            TODO: Add an argument description here.
+        """
+        if pattern['type'] == 'roulette':
+            self.parse_roulette(pattern)
+        elif pattern['type'] == 'circle array':
+            self.parse_circle_array(pattern)
+        else:
+            raise ValueError('Pattern must be a valid roulette or circle array dictionary.')
+
     def parse_circle_array(self, circle_data):
         """
         Parse a circle array dictionary into SVG <path> and <text> elements.
@@ -47,11 +61,14 @@ class SVGPostProcessor:
                                 example_data = {"type": "circle array", "D": [4.0, 11.0], "d": [5.5, 1.0], "n": [7, 20]}
         """
         self.pattern_svg = ''
+        self.parameters_svg = ''
 
         # Extract circle array parameters.
         ring_diameters = circle_data["D"]
         circle_diameters = circle_data["d"]
         num_circles = circle_data["n"]
+
+        text_pos = self.workspace_height + 2.0
 
         for i in range(0, len(ring_diameters)):
             angles = np.linspace(0, 2 * np.pi, num_circles[i], endpoint=False)
@@ -64,7 +81,21 @@ class SVGPostProcessor:
                 self.pattern_svg += (f'\t<circle\n\t\tr="{r}"\n\t\tcx="{cx_offset}"\n\t\tcy="{cy_offset}"'
                                      f'\n\t\tstroke="{self.stroke_color}"\n\t\tstroke-width="{self.stroke_width}"\n\t\tfill="none" />\n')
 
-        # TODO: parameters_svg
+            parameters = [('Ring Diameter (D):', f'{float(ring_diameters[i])}{self.workspace_units}'),
+                          ('Circle Diameter (d):', f'{float(circle_diameters[i])}{self.workspace_units}'),
+                          ('# Circles:', num_circles[i])]
+
+            self.parameters_svg += (f'\t<text x="1" y="{text_pos}" font-size="1.25" font-weight="bold">Circle Array {i + 1}</text>\n')
+            text_pos += 1.75  # advance text position by 1.75 units
+
+            for j in range(0, len(parameters)):
+                self.parameters_svg += (f'\t<text x="1" y="{text_pos}" font-size="1.25">\n'
+                                        f'\t\t<tspan>{parameters[j][0]}</tspan>\n'
+                                        f'\t\t<tspan x="15">{parameters[j][1]}</tspan>\n'
+                                        f'\t</text>\n')
+                text_pos += 1.75  # advance text position by 1.75 units
+
+            text_pos += 0.75
 
     def parse_roulette(self, roulette_data):
         """
@@ -84,8 +115,6 @@ class SVGPostProcessor:
         def lcm(a, b):
             """Helper function to compute the least common multiple of two numbers."""
             return (a * b) // math.gcd(a, b)
-
-        self.pattern_svg = ''
 
         # Extract roulette parameters.
         R = Fraction(roulette_data["R"])  # define as fraction
@@ -134,12 +163,15 @@ class SVGPostProcessor:
                       ('Rolling Side (s):', 'Inside' if s == -1 else 'Outside'),
                       ('Pen Distance (d):', f'{float(d)}{self.workspace_units}')]
 
-        self.parameters_svg = (f'\t<text x="1" y="{self.workspace_height + 2.0}" font-size="1" font-weight="bold">Pattern Parameters</text>\n')
+        text_pos = self.workspace_height + 2.0
+        self.parameters_svg = (f'\t<text x="1" y="{text_pos}" font-size="1.25" font-weight="bold">Roulette</text>\n')
+        text_pos += 1.75  # advance text position by 1.75 units
         for i in range(0, len(parameters)):
-            self.parameters_svg += (f'\t\t<text x="1" y="{self.workspace_height + 4.0 + 1.5*i}" font-size="1">\n'
-                                    f'\t\t\t<tspan>{parameters[i][0]}</tspan>\n'
-                                    f'\t\t\t<tspan x="14">{parameters[i][1]}</tspan>\n'
-                                    f'\t\t</text>\n')
+            self.parameters_svg += (f'\t<text x="1" y="{text_pos}" font-size="1.25">\n'
+                                    f'\t\t<tspan>{parameters[i][0]}</tspan>\n'
+                                    f'\t\t<tspan x="15">{parameters[i][1]}</tspan>\n'
+                                    f'\t</text>\n')
+            text_pos += 1.75  # advance text position by 1.75 units
 
     def save(self, filename):
         """
@@ -151,19 +183,17 @@ class SVGPostProcessor:
         with open(filename, "w") as file:
             if self.include_params:
                 height = self.svg_height + 300
-                view_height = self.workspace_height + 19.2
+                viewbox_height = self.workspace_height + 24
                 parameters_svg = (f'\n\t<!-- Parameters -->\n'
                                   f'{self.parameters_svg}')
             else:
                 height = self.svg_height
-                view_height = self.workspace_height
+                viewbox_height = self.workspace_height
                 parameters_svg = ''
 
-            doc_string = (f'<svg width="{self.svg_width}" height="{height}" viewBox="0 0 {self.workspace_width} {view_height}" xmlns="http://www.w3.org/2000/svg" version="1.1">\n'
-                          f'\n'
+            doc_string = (f'<svg width="{self.svg_width}" height="{height}" viewBox="0 0 {self.workspace_width} {viewbox_height}" xmlns="http://www.w3.org/2000/svg" version="1.1">\n\n'
                           f'\t<!-- Background -->\n'
-                          f'\t<rect x="0" y="0" width="{self.workspace_width}" height="{self.workspace_height}" fill="whitesmoke"/>\n'
-                          f'\n'
+                          f'\t<rect x="0" y="0" width="{self.workspace_width}" height="{self.workspace_height}" fill="whitesmoke"/>\n\n'
                           f'\t<!-- Pattern -->\n'
                           f'{self.pattern_svg}'
                           f'{parameters_svg}'
@@ -174,20 +204,16 @@ class SVGPostProcessor:
 
 # Example usage
 if __name__ == "__main__":
-
     # Create an instance of the post processor.
-    example_settings = {"svg_width": 500, "svg_height": 500,
+    example_settings = {"svg_width": 400, "svg_height": 400,
                         "workspace_width": 32, "workspace_height": 32, "workspace_units": 'mm',
                         "stroke_width": 0.25, "stroke_color": "slategray", "include_params": True}
     post_processor = SVGPostProcessor(example_settings)
 
-    # Parse an example roulette and save it to a file.
-    example_roulette = {"type": "roulette", "R": 5.5, "r": 2.5, "s": 1, "d": 3.5}
-    # example_circle_array_1 = {"type": "circle array", "D": [4.0, 11.0], "d": [5.5, 1.0], "n": [7, 20]}
-    # example_circle_array_2 = {"type": "circle array", "D": [4.0, 11.0, 0], "d": [5.5, 1.0, 12.5], "n": [7, 20, 1]}
-    post_processor.parse_roulette(example_roulette)
-    # post_processor.parse_circle_array(example_circle_array_1)
-    # post_processor.parse_circle_array(example_circle_array_2)
+    # Parse an example pattern and save it to a file.
+    # example_pattern = {"type": "roulette", "R": 5.5, "r": 2.5, "s": 1, "d": 3.5}
+    example_pattern = {"type": "circle array", "D": [4.0, 11.0, 0], "d": [5.5, 1.0, 12.5], "n": [7, 20, 1]}
+    post_processor.parse_pattern(example_pattern)
     post_processor.save("svg_with_example_patterns.svg")
 
     print("SVG file 'svg_with_example_patterns.svg' has been created!")
