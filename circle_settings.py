@@ -42,7 +42,7 @@ class CircleSettings(tk.Frame):
             row_widgets.append(circle_diameter)
 
             # Spinbox for "# Circles" (1-20, step=1)
-            num_circles = tk.Spinbox(self, from_=1, to=20, increment=1, width=8, state="disabled", command=self.update_spinbox_value)
+            num_circles = tk.Spinbox(self, from_=1, to=32, increment=1, width=8, state="disabled", command=self.update_spinbox_value)
             num_circles.grid(row=row, column=4, padx=5, pady=5)
             row_widgets.append(num_circles)
 
