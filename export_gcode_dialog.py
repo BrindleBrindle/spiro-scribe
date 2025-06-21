@@ -144,7 +144,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.num_passes_label.grid(row=6, column=0, padx=5, pady=5, sticky="w")
         self.num_passes_spinbox.grid(row=6, column=1, columnspan=2, sticky="ew")
 
-        self.res_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Arc resolution")
+        self.res_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Resolution")
         self.res_var = tk.StringVar(value=self.defaults_in['cut_res'])
         self.res_spinbox = tk.Spinbox(self.toolpath_lf, from_=100, to=5000, increment=10, width=8,
                                       validate="key", validatecommand=((validate_resolution_cmd, "%P")),
@@ -268,7 +268,7 @@ class ExportGCodeDialog(tk.Toplevel):
 
     def validate_float(self, new_value):
         """
-        Validates the input to ensure it is a valid float number.
+        Validates the input to ensure it is a float.
 
         Args:
             new_value (str): The current value of the Entry widget after the change.
@@ -289,7 +289,7 @@ class ExportGCodeDialog(tk.Toplevel):
 
     def validate_floatpos(self, new_value):
         """
-        Validates the input to ensure it is a valid float number greater than zero.
+        Validates the input to ensure it is a float greater than zero.
 
         Args:
             new_value (str): The current value of the Entry widget after the change.
@@ -300,11 +300,7 @@ class ExportGCodeDialog(tk.Toplevel):
         if new_value == "":  # Allow empty string (to enable deletion)
             return True
         try:
-            f = float(new_value)  # Try to convert to float
-            if f >= 0:
-                return True
-            else:
-                return False
+            return True if float(new_value) > 0 else False
         except ValueError:
             return False  # Reject input if it's not a valid float
 
@@ -321,11 +317,7 @@ class ExportGCodeDialog(tk.Toplevel):
         if new_value == "":  # Allow empty string (to enable deletion)
             return True
         try:
-            f = int(new_value)  # Try to convert to int
-            if (f > 0) and (f <= 5000):
-                return True
-            else:
-                return False
+            return True if (int(new_value) > 0) and (int(new_value) <= 5000) else False
         except ValueError:
             return False  # Reject input if it's not a valid int
 
@@ -342,11 +334,7 @@ class ExportGCodeDialog(tk.Toplevel):
         if new_value == "":  # Allow empty string (to enable deletion)
             return True
         try:
-            f = int(new_value)  # Try to convert to int
-            if (f > 0) and (f <= 100):
-                return True
-            else:
-                return False
+            return True if (int(new_value) > 0) and (int(new_value) <= 100) else False
         except ValueError:
             return False  # Reject input if it's not a valid int
 

@@ -26,7 +26,8 @@ class SVGPostProcessor:
                     "workspace_width": 32,
                     "workspace_height": 32,
                     "workspace_units": 'mm',
-                    "stroke_color": "black",
+                    "background_color": "whitesmoke",
+                    "stroke_color": "slategray",
                     "stroke_width": 0.5,
                     "include_params": True,
                     "path_resolution": 1000}

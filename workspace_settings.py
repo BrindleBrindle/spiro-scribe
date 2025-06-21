@@ -78,7 +78,7 @@ class WorkspaceSettings(tk.Frame):
 
     def create_color_picker(self, row, label_text, default_color):
         """Helper function to create a Label and a color picker square in a row."""
-        label = ttk.Label(self, text=label_text)
+        label = tk.Label(self, text=label_text)
         label.grid(row=row, column=0, padx=10, pady=5, sticky="w")
 
         # Create a small square to display the selected color with a subtle border
