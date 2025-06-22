@@ -1,12 +1,12 @@
 import os
 import tkinter as tk
-from tkinter import ttk
-from PIL import Image, ImageTk
-
 import standard_sequences as sseq
-from edit_sequence_dialog import EditSequenceDialog
+import entry_validation as ev
 
+from tkinter import ttk
 from tkinter import filedialog
+from PIL import Image, ImageTk
+from edit_sequence_dialog import EditSequenceDialog
 
 
 class ExportGCodeDialog(tk.Toplevel):
@@ -86,10 +86,10 @@ class ExportGCodeDialog(tk.Toplevel):
         self.units_button_mm.grid(row=0, column=2, sticky="ew")
 
         # Register the validation function
-        validate_float_cmd = self.register(self.validate_float)
-        validate_floatpos_cmd = self.register(self.validate_floatpos)
-        validate_resolution_cmd = self.register(self.validate_resolution)
-        validate_passes_cmd = self.register(self.validate_passes)
+        validate_float_cmd = self.register(ev.validate_float)
+        validate_float_pos_cmd = self.register(ev.validate_floatpos)
+        validate_resolution_cmd = self.register(ev.validate_resolution)
+        validate_passes_cmd = self.register(ev.validate_passes)
 
         self.safe_Z_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Safe Z Height")
         self.safe_Z_var = tk.StringVar(value=self.defaults_in['safe_z'])
@@ -103,7 +103,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.jog_rate_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Jog feedrate (XYZ)")
         self.jog_rate_var = tk.StringVar(value=self.defaults_in['jog_feed_xyz'])
         self.jog_rate_entry = tk.Entry(self.toolpath_lf, textvariable=self.jog_rate_var,
-                                       validate="key", validatecommand=(validate_floatpos_cmd, "%P"), width=15)
+                                       validate="key", validatecommand=(validate_float_pos_cmd, "%P"), width=15)
         self.jog_rate_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in/min]")
         self.jog_rate_label_1.grid(row=2, column=0, padx=5, pady=5, sticky="w")
         self.jog_rate_entry.grid(row=2, column=1, columnspan=2, sticky="ew")
@@ -112,7 +112,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.cut_rate_XY_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Cut feedrate (XY)")
         self.cut_rate_XY_var = tk.StringVar(value=self.defaults_in['cut_feed_xy'])
         self.cut_rate_XY_entry = tk.Entry(self.toolpath_lf, textvariable=self.cut_rate_XY_var,
-                                          validate="key", validatecommand=(validate_floatpos_cmd, "%P"), width=15)
+                                          validate="key", validatecommand=(validate_float_pos_cmd, "%P"), width=15)
         self.cut_rate_XY_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in/min]")
         self.cut_rate_XY_label_1.grid(row=3, column=0, padx=5, pady=5, sticky="w")
         self.cut_rate_XY_entry.grid(row=3, column=1, columnspan=2, sticky="ew")
@@ -121,7 +121,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.cut_rate_Z_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Cut feedrate (Z)")
         self.cut_rate_Z_var = tk.StringVar(value=self.defaults_in['cut_feed_z'])
         self.cut_rate_Z_entry = tk.Entry(self.toolpath_lf, textvariable=self.cut_rate_Z_var,
-                                         validate="key", validatecommand=(validate_floatpos_cmd, "%P"), width=15)
+                                         validate="key", validatecommand=(validate_float_pos_cmd, "%P"), width=15)
         self.cut_rate_Z_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in/min]")
         self.cut_rate_Z_label_1.grid(row=4, column=0, padx=5, pady=5, sticky="w")
         self.cut_rate_Z_entry.grid(row=4, column=1, columnspan=2, sticky="ew")
@@ -130,7 +130,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.depth_per_pass_label_1 = tk.Label(self.toolpath_lf, width=16, anchor="e", text="Depth per pass")
         self.depth_per_pass_var = tk.StringVar(value=self.defaults_in['depth_per_pass'])
         self.depth_per_pass_entry = tk.Entry(self.toolpath_lf, textvariable=self.depth_per_pass_var,
-                                             validate="key", validatecommand=(validate_floatpos_cmd, "%P"), width=15)
+                                             validate="key", validatecommand=(validate_float_pos_cmd, "%P"), width=15)
         self.depth_per_pass_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[in]")
         self.depth_per_pass_label_1.grid(row=5, column=0, padx=5, pady=5, sticky="w")
         self.depth_per_pass_entry.grid(row=5, column=1, columnspan=2, sticky="ew")
@@ -149,7 +149,7 @@ class ExportGCodeDialog(tk.Toplevel):
         self.res_spinbox = tk.Spinbox(self.toolpath_lf, from_=100, to=5000, increment=10, width=8,
                                       validate="key", validatecommand=((validate_resolution_cmd, "%P")),
                                       textvariable=self.res_var)
-        self.res_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[divs/360\u00B0]")
+        self.res_label_2 = tk.Label(self.toolpath_lf, width=16, anchor="w", text="[divs/360°]")
         self.res_label_1.grid(row=7, column=0, padx=5, pady=(5, 10), sticky="w")
         self.res_spinbox.grid(row=7, column=1, columnspan=2, sticky="ew")
         self.res_label_2.grid(row=7, column=3, padx=5, pady=5, sticky="w")
@@ -265,78 +265,6 @@ class ExportGCodeDialog(tk.Toplevel):
             return (value / 25.4)
         else:
             raise ValueError("Invalid unit system. Use 'metric' or 'imperial'.")
-
-    def validate_float(self, new_value):
-        """
-        Validates the input to ensure it is a float.
-
-        Args:
-            new_value (str): The current value of the Entry widget after the change.
-
-        Returns:
-            bool: True if the input is a valid float, a dash as the first character,
-                  or empty, False otherwise.
-        """
-        if new_value == "":  # Allow empty string (to enable deletion)
-            return True
-        if new_value == "-":  # Allow a single dash as the first character
-            return True
-        try:
-            float(new_value)  # Try to convert to float
-            return True
-        except ValueError:
-            return False  # Reject input if it's not a valid float
-
-    def validate_floatpos(self, new_value):
-        """
-        Validates the input to ensure it is a float greater than zero.
-
-        Args:
-            new_value (str): The current value of the Entry widget after the change.
-
-        Returns:
-            bool: True if the input is a valid float or empty, False otherwise.
-        """
-        if new_value == "":  # Allow empty string (to enable deletion)
-            return True
-        try:
-            return True if float(new_value) > 0 else False
-        except ValueError:
-            return False  # Reject input if it's not a valid float
-
-    def validate_resolution(self, new_value):
-        """
-        Validates the input to ensure it is a valid arc resolution value.
-
-        Args:
-            new_value (str): The current value of the Spinbox widget after the change.
-
-        Returns:
-            bool: True if the input is a valid resolution or empty, False otherwise.
-        """
-        if new_value == "":  # Allow empty string (to enable deletion)
-            return True
-        try:
-            return True if (int(new_value) > 0) and (int(new_value) <= 5000) else False
-        except ValueError:
-            return False  # Reject input if it's not a valid int
-
-    def validate_passes(self, new_value):
-        """
-        Validates the input to ensure it is a valid number of cut passes.
-
-        Args:
-            new_value (str): The current value of the Spinbox widget after the change.
-
-        Returns:
-            bool: True if the input is a valid number of passes or empty, False otherwise.
-        """
-        if new_value == "":  # Allow empty string (to enable deletion)
-            return True
-        try:
-            return True if (int(new_value) > 0) and (int(new_value) <= 100) else False
-        except ValueError:
-            return False  # Reject input if it's not a valid int
 
     def round_float(self, value, N):
         """

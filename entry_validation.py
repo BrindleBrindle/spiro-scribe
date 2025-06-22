@@ -1,52 +1,88 @@
-def validate_int_pos(new_value):
+def validate_int_pos(value):
     """
     Validate the input to ensure it is an integer greater than zero.
 
     Args:
-        new_value (str): The current value of the Entry widget after the change.
+        value (str): Input value to evaluate.
 
     Returns:
         bool: True if the input is a valid int or empty, False otherwise.
     """
-    if new_value == "":  # allow empty string (to enable deletion)
+    if value == "":  # allow empty string (to enable deletion)
         return True
     try:
-        return True if int(new_value) > 0 else False
+        return True if int(value) > 0 else False
     except ValueError:
         return False  # reject input if it's not a valid int
 
 
-def validate_float_pos(new_value):
+def validate_float_pos(value):
     """
     Validate the input to ensure it is a float greater than zero.
 
     Args:
-        new_value (str): The current value of the Entry widget after the change.
+        value (str): Input value to evaluate.
 
     Returns:
         bool: True if the input is a valid float or empty, False otherwise.
     """
-    if new_value == "":  # allow empty string (to enable deletion)
+    if value == "":  # allow empty string (to enable deletion)
         return True
     try:
-        return True if float(new_value) > 0 else False
+        return True if float(value) > 0 else False
     except ValueError:
         return False  # reject input if it's not a valid float
 
 
-def validate_resolution(new_value):
+def validate_float(value):
     """
-    Validate the input to ensure it is a valid arc resolution value.
+    Validate the input to ensure it is a float.
 
     Args:
-        new_value (str): The current value of the Spinbox widget after the change.
+        value (str): Input value to evaluate.
+
+    Returns:
+        bool: True if the input is a valid float or empty, False otherwise.
+    """
+    if value == "":  # allow empty string (to enable deletion)
+        return True
+    try:
+        return True if float(value) > 0 else False
+    except ValueError:
+        return False  # reject input if it's not a valid float
+
+
+def validate_resolution(value):
+    """
+    Validate the input to ensure it is a valid path resolution value.
+
+    Args:
+        value (str): Input value to evaluate.
 
     Returns:
         bool: True if the input is a valid resolution or empty, False otherwise.
     """
-    if new_value == "":  # allow empty string (to enable deletion)
+    if value == "":  # allow empty string (to enable deletion)
         return True
     try:
-        return True if (int(new_value) > 0) and (int(new_value) <= 5000) else False
+        return True if (int(value) > 0) and (int(value) <= 5000) else False
+    except ValueError:
+        return False  # reject input if it's not a valid int
+
+
+def validate_passes(value):
+    """
+    Validate the input to ensure it is a valid number of cut passes.
+
+    Args:
+        value (str): Input value to evaluate.
+
+    Returns:
+        bool: True if the input is a valid number of passes or empty, False otherwise.
+    """
+    if value == "":  # allow empty string (to enable deletion)
+        return True
+    try:
+        return True if (int(value) > 0) and (int(value) <= 100) else False
     except ValueError:
         return False  # reject input if it's not a valid int
