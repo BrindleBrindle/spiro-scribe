@@ -87,7 +87,7 @@ class ExportGCodeDialog(tk.Toplevel):
 
         # Register the validation function
         validate_float_cmd = self.register(ev.validate_float)
-        validate_float_pos_cmd = self.register(ev.validate_floatpos)
+        validate_float_pos_cmd = self.register(ev.validate_float_pos)
         validate_resolution_cmd = self.register(ev.validate_resolution)
         validate_passes_cmd = self.register(ev.validate_passes)
 
