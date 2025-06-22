@@ -1,10 +1,11 @@
 import os
 import tkinter as tk
-from tkinter import ttk
-from PIL import Image, ImageTk
+import entry_validation as ev
 
-from tkinter import colorchooser  # for the color picker
+from tkinter import ttk
+from tkinter import colorchooser
 from tkinter import filedialog
+from PIL import Image, ImageTk
 
 
 class ExportSVGDialog(tk.Toplevel):
@@ -17,6 +18,7 @@ class ExportSVGDialog(tk.Toplevel):
         """
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
+        self.widgets = {}  # store references to widgets for easy access
         self.title("Export to SVG")
         self.resizable(False, False)
         self.transient(parent)  # keep dialog on top of main window
@@ -52,59 +54,101 @@ class ExportSVGDialog(tk.Toplevel):
         self.svg_lf.columnconfigure(2, weight=1)
 
         # Register entry validation functions
-        validate_intpos_cmd = self.register(self.validate_intpos)
-        validate_floatpos_cmd = self.register(self.validate_floatpos)
-        validate_resolution_cmd = self.register(self.validate_resolution)
+        validate_int_pos_cmd = self.register(ev.validate_int_pos)
+        validate_float_pos_cmd = self.register(ev.validate_float_pos)
+        validate_resolution_cmd = self.register(ev.validate_resolution)
 
-        self.width_label_1 = tk.Label(self.svg_lf, anchor="e", width=16, text="Image Width")
-        self.width_var = tk.StringVar(value=self.defaults['svg_width'])
-        self.width_entry = tk.Entry(self.svg_lf, textvariable=self.width_var,
-                                    validate="key", validatecommand=(validate_intpos_cmd, "%P"), width=15)
-        self.width_label_2 = tk.Label(self.svg_lf, width=16, anchor="w", text="[px]")
-        self.width_label_1.grid(row=1, column=0, padx=5, pady=(10, 5), sticky="w")
-        self.width_entry.grid(row=1, column=1, columnspan=2, pady=(10, 5), sticky="ew")
-        self.width_label_2.grid(row=1, column=3, padx=5, pady=(10, 5), sticky="ew")
+        self.create_row(
+            self.svg_lf,
+            row=0,
+            left_label_text="Image Width",
+            widget_type="entry",
+            widget_options={
+                "default": self.defaults['svg_width'],
+                "width": 16,
+                "validate": "key",
+                "validatecommand": (validate_int_pos_cmd, "%P"),
+            },
+            right_label_text="[px]",
+        )
 
-        self.height_label_1 = tk.Label(self.svg_lf, anchor="e", width=16, text="Image Height")
-        self.height_var = tk.StringVar(value=self.defaults['svg_height'])
-        self.height_entry = tk.Entry(self.svg_lf, textvariable=self.height_var,
-                                     validate="key", validatecommand=(validate_intpos_cmd, "%P"), width=15)
-        self.height_label_2 = tk.Label(self.svg_lf, width=16, anchor="w", text="[px]")
-        self.height_label_1.grid(row=2, column=0, padx=5, pady=5, stick="w")
-        self.height_entry.grid(row=2, column=1, columnspan=2, sticky="ew")
-        self.height_label_2.grid(row=2, column=3, padx=5, sticky="ew")
+        self.create_row(
+            self.svg_lf,
+            row=1,
+            left_label_text="Image Height",
+            widget_type="entry",
+            widget_options={
+                "default": self.defaults['svg_height'],
+                "width": 16,
+                "validate": "key",
+                "validatecommand": (validate_int_pos_cmd, "%P"),
+            },
+            right_label_text="[px]",
+        )
 
-        self.stroke_width_label_1 = tk.Label(self.svg_lf, anchor="e", width=16, text="Stroke Width")
-        self.stroke_width_var = tk.StringVar(value=self.defaults['stroke_width'])
-        self.stroke_width_entry = tk.Entry(self.svg_lf, textvariable=self.stroke_width_var,
-                                           validate="key", validatecommand=(validate_floatpos_cmd, "%P"), width=15)
-        self.stroke_width_label_2 = tk.Label(self.svg_lf, width=16, anchor="w", text="[mm]")
-        self.stroke_width_label_1.grid(row=3, column=0, padx=5, pady=5, stick="w")
-        self.stroke_width_entry.grid(row=3, column=1, columnspan=2, sticky="ew")
-        self.stroke_width_label_2.grid(row=3, column=3, padx=5, sticky="ew")
+        self.create_row(
+            self.svg_lf,
+            row=2,
+            left_label_text="Stroke Width",
+            widget_type="entry",
+            widget_options={
+                "default": self.defaults['stroke_width'],
+                "width": 16,
+                "validate": "key",
+                "validatecommand": (validate_float_pos_cmd, "%P"),
+            },
+            right_label_text="[dwg units]",
+        )
 
-        self.res_label_1 = tk.Label(self.svg_lf, width=16, anchor="e", text="Path Resolution")
-        self.res_var = tk.StringVar(value=self.defaults['path_resolution'])
-        self.res_spinbox = tk.Spinbox(self.svg_lf, from_=100, to=5000, increment=10, width=8,
-                                      validate="key", validatecommand=((validate_resolution_cmd, "%P")),
-                                      textvariable=self.res_var)
-        self.res_label_2 = tk.Label(self.svg_lf, width=16, anchor="w", text="[divs/360\u00B0]")
-        self.res_label_1.grid(row=4, column=0, padx=5, pady=5, sticky="w")
-        self.res_spinbox.grid(row=4, column=1, columnspan=2, pady=5, sticky="ew")
-        self.res_label_2.grid(row=4, column=3, padx=5, pady=5, sticky="w")
+        self.create_row(
+            self.svg_lf,
+            row=3,
+            left_label_text="Path Resolution",
+            widget_type="spinbox",
+            widget_options={
+                "default": self.defaults['path_resolution'],
+                "from_": 16,
+                "to": 5000,
+                "increment": 10,
+                "validate": "key",
+                "validatecommand": (validate_resolution_cmd, "%P"),
+            },
+            right_label_text="[divs/360°]",
+        )
 
-        self.create_color_picker(self.svg_lf, row=5, label_text="Background Color", default_color=self.defaults['background_color'])
-        self.create_color_picker(self.svg_lf, row=6, label_text="Stroke Color", default_color=self.defaults['stroke_color'])
+        self.create_row(
+            self.svg_lf,
+            row=4,
+            left_label_text="Background Color",
+            widget_type="colorpicker",
+            widget_options={
+                "default": self.defaults['background_color'],
+            },
+            right_label_text="",
+        )
 
-        self.include_params_label = tk.Label(self.svg_lf, width=16, anchor="e", text="Include Parameters")
-        self.include_params_var = tk.BooleanVar(value=self.defaults['include_params'])
-        self.include_params_checkbutton = tk.Checkbutton(self.svg_lf, variable=self.include_params_var)
-        self.include_params_label.grid(row=7, column=0, padx=(5, 0), pady=(5, 10), sticky="w")
-        self.include_params_checkbutton.grid(row=7, column=1, sticky="ew")
+        self.create_row(
+            self.svg_lf,
+            row=5,
+            left_label_text="Stroke Color",
+            widget_type="colorpicker",
+            widget_options={
+                "default": self.defaults['stroke_color'],
+            },
+            right_label_text="",
+        )
+
+        self.create_row(
+            self.svg_lf,
+            row=6,
+            left_label_text="Include Parameters",
+            widget_type="checkbutton",
+            widget_options={"default": True},
+        )
 
         cwd = os.getcwd()
         folder_image = Image.open(cwd + "\\images\\" + "folder.png")
-        resized_folder_image = folder_image.resize((18, 18))  # Resize to fit the button
+        resized_folder_image = folder_image.resize((18, 18))  # resize to fit the button
         folder_button_image = ImageTk.PhotoImage(resized_folder_image)
 
         self.out_location_label = tk.Label(self.main_frame, anchor="w", text="Output")
@@ -142,42 +186,136 @@ class ExportSVGDialog(tk.Toplevel):
         # Stop main script until dialog is dismissed.
         self.wait_window(self)
 
-    def create_color_picker(self, parent, row, label_text, default_color):
-        """Helper function to create a Label and a color picker square in a row."""
-        label = tk.Label(parent, text=label_text, width=16, anchor="e")
-        label.grid(row=row, column=0, padx=5, pady=5)
+    def create_row(self, parent_frame, row, left_label_text, widget_type, widget_options=None, right_label_text=None):
+        """
+        Create a row of GUI elements: a left label, a middle input widget, and an optional right label.
 
-        # Create a small square to display the selected color with a subtle border
-        self.color_display = tk.Canvas(
-            parent,
-            width=20,
-            height=20,
-            bg=default_color,  # set to the initial default color
-            highlightthickness=1,  # subtle border thickness
-            highlightbackground="dim gray"  # subtle border color
-        )
-        self.color_display.grid(row=row, column=1, padx=0, pady=5, sticky="w")
+        Args:
+            parent_frame (tk.Frame): The parent container to which the row will be added.
+            row (int): The row index for grid placement.
+            left_label_text (str): Text for the left label.
+            widget_type (str): Type of middle widget ('entry', 'spinbox', 'checkbutton', or 'colorpicker').
+            widget_options (dict): Options for configuring the middle widget (default: None).
+            right_label_text (str): Text for the optional right label (default: None).
 
-        # Store the default color
-        self.current_color = default_color
+        Returns:
+            dict: References to the created widgets (left_label, middle_widget, right_label).
+        """
+        # Default options for widgets
+        widget_options = widget_options or {}
 
-        # Bind a click event to open the color picker
-        self.color_display.bind("<Button-1>", self.open_color_picker)
+        # Create the left label
+        left_label = tk.Label(parent_frame, text=left_label_text, width=16, anchor="e")
+        left_label.grid(row=row, column=0, padx=5, pady=5, sticky="w")
 
-    def open_color_picker(self, event):
-        """Open a color picker dialog and update the color display."""
-        # Open the color picker with the current color pre-selected
-        color_code = colorchooser.askcolor(color=self.current_color, title="Choose a color")[1]  # get the color hex code
-        if color_code:  # if a color is selected, update the square's background
-            self.current_color = color_code  # store the new color
-            self.color_display.config(bg=color_code)
-            self.event_generate("<<BackgroundColorAction>>")  # notify parent of new color
+        # Create the middle widget based on the widget type
+        if widget_type == "entry":
+            var = tk.StringVar(value=widget_options.get("default", ""))
+            middle_widget = tk.Entry(
+                parent_frame,
+                textvariable=var,
+                width=widget_options.get("width", 10),
+                validate=widget_options.get("validate", "none"),
+                validatecommand=widget_options.get("validatecommand"),
+            )
+            middle_widget.grid(row=row, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
+
+        elif widget_type == "spinbox":
+            var = tk.StringVar(value=widget_options.get("default", ""))
+            middle_widget = tk.Spinbox(
+                parent_frame,
+                from_=widget_options.get("from_", 0),
+                to=widget_options.get("to", 100),
+                increment=widget_options.get("increment", 1),
+                textvariable=var,
+                width=widget_options.get("width", 8),
+                validate=widget_options.get("validate", "none"),
+                validatecommand=widget_options.get("validatecommand"),
+            )
+            middle_widget.grid(row=row, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
+
+        elif widget_type == "checkbutton":
+            var = tk.BooleanVar(value=bool(widget_options.get("default", False)))
+            middle_widget = tk.Checkbutton(parent_frame, variable=var, anchor="w")
+            middle_widget.grid(row=row, column=1, columnspan=2, padx=(0, 5), pady=5, sticky="w")
+
+        elif widget_type == "colorpicker":
+            var = tk.StringVar(value=widget_options.get("default", "pink"))
+            middle_widget = tk.Canvas(
+                parent_frame,
+                width=20,
+                height=20,
+                bg=var.get(),  # set the initial background color
+                highlightthickness=1,  # subtle border thickness
+                highlightbackground="dim gray"  # subtle border color
+            )
+
+            # Function to open the color chooser and update the Canvas and StringVar
+            def pick_color(event=None):
+                color_code = colorchooser.askcolor(color=var.get(), title="Choose a color")[1]
+                if color_code:  # if a color is selected (not canceled)
+                    var.set(color_code)  # update the StringVar with the chosen color
+                    middle_widget.config(bg=color_code)  # update the Canvas background color
+                    self.event_generate("<<BackgroundColorAction>>")  # notify parent of new color
+
+            middle_widget.bind("<Button-1>", pick_color)
+            middle_widget.grid(row=row, column=1, padx=5, pady=5, sticky="w")
+
+        else:
+            raise ValueError(f"Unsupported widget type: {widget_type}")
+
+        # Create the optional right label
+        right_label = None
+        if right_label_text:
+            right_label = tk.Label(parent_frame, text=right_label_text, width=16, anchor="w")
+            right_label.grid(row=row, column=3, padx=5, pady=5, sticky="w")
+
+        # Store references to widgets for external access
+        self.widgets[left_label_text] = {"left_label": left_label, "middle_widget": middle_widget, "var": var, "right_label": right_label}
+
+        return self.widgets[left_label_text]
+
+    def get_widget_value(self, label_text):
+        """
+        Get the value of a widget based on the left label's text.
+
+        Args:
+            label_text (str): The text of the left label.
+
+        Returns:
+            Any: The current value of the associated widget.
+        """
+        widget_info = self.widgets.get(label_text)
+        if not widget_info:
+            return None
+
+        var = widget_info["var"]
+        if isinstance(var, (tk.StringVar, tk.BooleanVar)):
+            return var.get()
+        else:
+            return None
+
+    def set_widget_value(self, label_text, value):
+        """
+        Set the value of a widget based on the left label's text.
+
+        Args:
+            label_text (str): The text of the left label.
+            value (Any): The value to set for the associated widget.
+        """
+        widget_info = self.widgets.get(label_text)
+        if not widget_info:
+            return
+
+        var = widget_info["var"]
+        if isinstance(var, (tk.StringVar, tk.BooleanVar)):
+            var.set(value)
 
     def convert_value(self, value, units):
         """
         Convert a value to the specified unit system.
 
-        Arguments:
+        Args:
             value (float): The value in the current unit system.
             units (str): The target unit system, either "metric" or "imperial".
 
@@ -190,57 +328,6 @@ class ExportSVGDialog(tk.Toplevel):
             return (value / 25.4)
         else:
             raise ValueError("Invalid unit system. Use 'metric' or 'imperial'.")
-
-    def validate_intpos(self, new_value):
-        """
-        Validates the input to ensure it is an integer greater than zero.
-
-        Args:
-            new_value (str): The current value of the Entry widget after the change.
-
-        Returns:
-            bool: True if the input is a valid int or empty, False otherwise.
-        """
-        if new_value == "":  # Allow empty string (to enable deletion)
-            return True
-        try:
-            return True if int(new_value) > 0 else False
-        except ValueError:
-            return False  # Reject input if it's not a valid int
-
-    def validate_floatpos(self, new_value):
-        """
-        Validates the input to ensure it is a float greater than zero.
-
-        Arguments:
-            new_value (str): The current value of the Entry widget after the change.
-
-        Returns:
-            bool: True if the input is a valid float or empty, False otherwise.
-        """
-        if new_value == "":  # Allow empty string (to enable deletion)
-            return True
-        try:
-            return True if float(new_value) > 0 else False
-        except ValueError:
-            return False  # Reject input if it's not a valid float
-
-    def validate_resolution(self, new_value):
-        """
-        Validates the input to ensure it is a valid arc resolution value.
-
-        Args:
-            new_value (str): The current value of the Spinbox widget after the change.
-
-        Returns:
-            bool: True if the input is a valid resolution or empty, False otherwise.
-        """
-        if new_value == "":  # Allow empty string (to enable deletion)
-            return True
-        try:
-            return True if (int(new_value) > 0) and (int(new_value) <= 5000) else False
-        except ValueError:
-            return False  # Reject input if it's not a valid int
 
     def raise_save_as_dialog(self):
         file_path = filedialog.asksaveasfilename(title="Select Output Location",
