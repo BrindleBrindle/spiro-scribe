@@ -30,14 +30,14 @@ class UserControlsPane(tk.Frame):
         """Create two tabs and add them to the Notebook."""
         # Tab 1
         tab1 = ttk.Frame(self.notebook)
-        self.notebook.add(tab1, text="Simple Circles")
+        self.notebook.add(tab1, text="Circle Array")
 
         circle_settings = CircleSettings(tab1)
         circle_settings.grid(row=0, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew")
 
         # Tab 2
         tab2 = ttk.Frame(self.notebook)
-        self.notebook.add(tab2, text="Roulettes")
+        self.notebook.add(tab2, text="Roulette")
 
         roulette_settings = RouletteSettings(tab2)
         roulette_settings.grid(row=0, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew")

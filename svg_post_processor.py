@@ -174,7 +174,7 @@ class SVGPostProcessor:
                                     f'\t</text>\n')
             text_pos += 1.75  # advance text position by 1.75 units
 
-    def save(self, filename):
+    def save_to_file(self, filename):
         """
         Generate the SVG string for the entire document and save it to a file.
         
@@ -215,6 +215,6 @@ if __name__ == "__main__":
     # example_pattern = {"type": "roulette", "R": 5.5, "r": 2.5, "s": 1, "d": 3.5}
     example_pattern = {"type": "circle array", "D": [4.0, 11.0, 0], "d": [5.5, 1.0, 12.5], "n": [7, 20, 1]}
     post_processor.parse_pattern(example_pattern)
-    post_processor.save("svg_with_example_patterns.svg")
+    post_processor.save_to_file("svg_with_example_patterns.svg")
 
     print("SVG file 'svg_with_example_patterns.svg' has been created!")

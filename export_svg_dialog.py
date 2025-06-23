@@ -36,7 +36,7 @@ class ExportSVGDialog(tk.Toplevel):
                          "svg_height": 400,
                          "background_color": "whitesmoke",
                          "stroke_color": "slategray",
-                         "stroke_width": 0.5,
+                         "stroke_width": 0.25,
                          "include_params": True,
                          "path_resolution": 1000}
 
@@ -159,7 +159,7 @@ class ExportSVGDialog(tk.Toplevel):
         self.out_location_label.grid(row=2, column=0, padx=(10, 5), pady=(5, 10), sticky="w")
         self.out_location_entry.grid(row=2, column=1, padx=(5, 5), pady=(5, 10), sticky="nsew")
         self.out_location_button.grid(row=2, column=2, padx=(5, 10), pady=(5, 10), sticky="w")
-        self.out_location_button.image = folder_button_image  # Keep a reference
+        self.out_location_button.image = folder_button_image  # keep a reference
 
         self.export_button_frame = tk.Frame(self)
         self.export_button_frame.grid(row=1, column=0, padx=10, pady=(5, 10), sticky="nsew")
@@ -301,7 +301,7 @@ class ExportSVGDialog(tk.Toplevel):
 
         Args:
             label_text (str): The text of the left label.
-            value (Any): The value to set for the associated widget.
+            value (any): The value to set for the associated widget.
         """
         widget_info = self.widgets.get(label_text)
         if not widget_info:
@@ -310,24 +310,6 @@ class ExportSVGDialog(tk.Toplevel):
         var = widget_info["var"]
         if isinstance(var, (tk.StringVar, tk.BooleanVar)):
             var.set(value)
-
-    def convert_value(self, value, units):
-        """
-        Convert a value to the specified unit system.
-
-        Args:
-            value (float): The value in the current unit system.
-            units (str): The target unit system, either "metric" or "imperial".
-
-        Returns:
-            float: The converted value in the target unit system.
-        """
-        if units == "metric":
-            return (25.4 * value)
-        elif units == "imperial":
-            return (value / 25.4)
-        else:
-            raise ValueError("Invalid unit system. Use 'metric' or 'imperial'.")
 
     def raise_save_as_dialog(self):
         file_path = filedialog.asksaveasfilename(title="Select Output Location",
@@ -342,7 +324,13 @@ class ExportSVGDialog(tk.Toplevel):
 
     def export(self, event=None):
         svg_parameters = {}
-        # TODO: Collect up all SVG parameters.
+        svg_parameters['svg_width'] = int(self.get_widget_value("Image Width"))
+        svg_parameters['svg_height'] = int(self.get_widget_value("Image Height"))
+        svg_parameters['stroke_width'] = float(self.get_widget_value("Stroke Width"))
+        svg_parameters['path_resolution'] = int(self.get_widget_value("Path Resolution"))
+        svg_parameters['background_color'] = self.get_widget_value("Background Color")
+        svg_parameters['stroke_color'] = self.get_widget_value("Stroke Color")
+        svg_parameters['include_params'] = bool(self.get_widget_value("Include Parameters"))
 
         self.settings = {"file_path": self.file_path,
                          "svg_parameters": svg_parameters}

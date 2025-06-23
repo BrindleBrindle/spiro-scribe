@@ -30,6 +30,7 @@ class SpiroScribeApp(tk.Tk):
 
         self.origin_position = (1, 1)
         self.workspace_dims = (32, 32)
+        self.workspace_units = "mm"
 
         self.frame = tk.Frame(self)
         self.frame.grid(row=0, column=0, sticky="nsew")
@@ -88,25 +89,27 @@ class SpiroScribeApp(tk.Tk):
 
     def open_export_svg_dialog(self):
         # Open Export SVG dialog.
-        # TODO: Pass in initial values for the dialog.
         dialog = ExportSVGDialog(self)
 
         # Retrieve settings from dialog.
         export_settings = dialog.get_settings()
 
+        # Add workspace settings.
+        export_settings['svg_parameters']['workspace_width'] = self.workspace_dims[0]
+        export_settings['svg_parameters']['workspace_height'] = self.workspace_dims[1]
+        export_settings['svg_parameters']['workspace_units'] = self.workspace_units
+
         # Export SVG file if settings are not empty.
         if export_settings:
             # Initialize instance of SVG post processor.
-            post_processor = SVGPostProcessor()
-
-            # Add circles (if specified).
-            if self.circles:
-                for circle in self.circles:
-                    post_processor.parse_circle(circle_data=circle)
+            post_processor = SVGPostProcessor(export_settings['svg_parameters'])
 
             # Add roulette (if specified).
             if self.roulette:
-                post_processor.parse_roulette(roulette_data=self.roulette)
+                post_processor.parse_pattern(self.roulette)
+
+        # Export SVG to file.
+        post_processor.save_to_file(export_settings['file_path'])
 
     def open_export_gcode_dialog(self):
         # Open Export G Code dialog.
