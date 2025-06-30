@@ -1,3 +1,6 @@
+import inspect
+
+
 def get_example_title(units):
     """ Generate example title block. """
     title_block = ""
@@ -56,16 +59,42 @@ def get_end_sequence():
     return end_sequence.strip()  # strip away any trailing whitespace
 
 
+# Create a dictionary to map keys to functions
+function_mapping = {
+    "title": get_example_title,
+    "start": get_start_sequence,
+    "end": get_end_sequence,
+}
+
+
+def get_sequence(key, *args, **kwargs):
+    # Use the dictionary to select the correct function
+    func = function_mapping.get(key)
+    if not func:
+        raise ValueError(f"No function found for key: {key}")
+
+    # Inspect the function's signature to determine its parameters
+    sig = inspect.signature(func)
+    if len(sig.parameters) == 0:
+        # Call the function without arguments
+        return func()
+    else:
+        # Call the function with provided arguments
+        return func(*args, **kwargs)
+
+
 # Run the application
 if __name__ == "__main__":
     print("Sample Title Block:")
     print("===============================")
-    print(get_example_title("in"))
+    print(get_sequence("title", "imperial"))
+    print("")
 
     print("Sample Start Sequence:")
     print("===============================")
-    print(get_start_sequence("in"))
+    print(get_sequence("start", "imperial"))
+    print("")
 
     print("Sample End Sequence:")
     print("===============================")
-    print(get_end_sequence())
+    print(get_sequence("end"), "imperial")

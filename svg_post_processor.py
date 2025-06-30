@@ -15,6 +15,7 @@ class SVGPostProcessor:
                                                   "workspace_width": 32,
                                                   "workspace_height": 32,
                                                   "workspace_units": 'mm',
+                                                  "background_color": 'whitesmoke'
                                                   "stroke_color": "black",
                                                   "stroke_width": 1,
                                                   "include_params": True,
@@ -183,8 +184,9 @@ class SVGPostProcessor:
         """
         with open(filename, "w") as file:
             if self.include_params:
+                m = self.workspace_width / float(self.svg_width)
                 height = self.svg_height + 300
-                viewbox_height = self.workspace_height + 24
+                viewbox_height = self.workspace_height + 300*m
                 parameters_svg = (f'\n\t<!-- Parameters -->\n'
                                   f'{self.parameters_svg}')
             else:
