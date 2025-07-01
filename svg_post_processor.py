@@ -4,40 +4,34 @@ from fractions import Fraction
 
 
 class SVGPostProcessor:
-    def __init__(self, svg_data={}):
+    def __init__(self, units, svg_settings):
         """
         Converter to translate circle and roulette patterns into vector graphics (SVG format).
 
         Args:
-            svg_data (dict): Dictionary of SVG document parameters.
-                                  example_data = {"svg_width": 400,
-                                                  "svg_height": 400,
-                                                  "workspace_width": 32,
-                                                  "workspace_height": 32,
-                                                  "workspace_units": 'mm',
-                                                  "background_color": 'whitesmoke'
-                                                  "stroke_color": "black",
-                                                  "stroke_width": 1,
-                                                  "include_params": True,
-                                                  "path_resolution": 200}
+            units (str):            Either 'imperial' or 'metric'
+            svg_settings (dict):    Dictionary of settings from SVG export dialog.
         """
-        # Extract settings from dictionary. Use default values if keys are missing.
-        defaults = {"svg_width": 400,
-                    "svg_height": 400,
-                    "workspace_width": 32,
-                    "workspace_height": 32,
-                    "workspace_units": 'mm',
-                    "background_color": "whitesmoke",
-                    "stroke_color": "slategray",
-                    "stroke_width": 0.5,
-                    "include_params": True,
-                    "path_resolution": 1000}
-        for key, default in defaults.items():
-            setattr(self, key, svg_data.get(key, default))
+        self.pattern_svg = ''  # stores pattern
+        self.parameters_svg = ''  # stores parameter text
 
-        # Create variables to store generated SVG drawing elements.
-        self.pattern_svg = ''
-        self.parameters_svg = ''
+        if units == 'imperial':
+            self.workspace_units = "in"
+        elif units == 'metric':
+            self.workspace_units = "mm"
+        else:
+            raise ValueError("Units must be 'imperial' or 'metric'.")
+
+        # Extract SVG export settings.
+        self.svg_width = int(svg_settings['svg_width'])
+        self.svg_height = int(svg_settings['svg_height'])
+        self.workspace_width = float(svg_settings['workspace_width'])
+        self.workspace_height = float(svg_settings['workspace_height'])
+        self.background_color = svg_settings['background_color']
+        self.stroke_color = svg_settings['stroke_color']
+        self.stroke_width = float(svg_settings['stroke_width'])
+        self.include_params = bool(svg_settings['include_params'])
+        self.path_resolution = int(svg_settings['path_resolution'])
 
     def parse_pattern(self, pattern):
         """
@@ -58,9 +52,9 @@ class SVGPostProcessor:
         Parse a circle array dictionary into SVG <path> and <text> elements.
 
         Args:
-            circle_data (dict): Dictionary of circle array parameters (defined in mm).
-                                example_data = {"type": "circle array", "D": 6.5, "d": 2.5, "n": 6}
-                                example_data = {"type": "circle array", "D": [4.0, 11.0], "d": [5.5, 1.0], "n": [7, 20]}
+            circle_data (dict):     Dictionary of circle array parameters (defined in mm).
+                                    example_data = {"type": "circle array", "D": 6.5, "d": 2.5, "n": 6}
+                                    example_data = {"type": "circle array", "D": [4.0, 11.0], "d": [5.5, 1.0], "n": [7, 20]}
         """
         self.pattern_svg = ''
         self.parameters_svg = ''
@@ -208,10 +202,12 @@ class SVGPostProcessor:
 # Example usage
 if __name__ == "__main__":
     # Create an instance of the post processor.
-    example_settings = {"svg_width": 400, "svg_height": 400,
-                        "workspace_width": 32, "workspace_height": 32, "workspace_units": 'mm',
-                        "stroke_width": 0.25, "stroke_color": "slategray", "include_params": True}
-    post_processor = SVGPostProcessor(example_settings)
+    units = "metric"
+    example_settings = {"svg_width": 400, "svg_height": 400, "workspace_width": 32,
+                        "workspace_height": 32, "background_color": "whitesmoke",
+                        "stroke_color": "slategray", "stroke_width": 0.25, "include_params": True,
+                        "path_resolution": 1000}
+    post_processor = SVGPostProcessor(units, example_settings)
 
     # Parse an example pattern and save it to a file.
     # example_pattern = {"type": "roulette", "R": 5.5, "r": 2.5, "s": 1, "d": 3.5}

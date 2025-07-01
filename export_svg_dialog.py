@@ -43,6 +43,7 @@ class ExportSVGDialog(ExportDialog):
         self.create_input_row(
             self.content_frame,
             row=0,
+            key="svg_width",
             left_label_text="Image Width",
             widget_type="entry",
             widget_options={
@@ -57,6 +58,7 @@ class ExportSVGDialog(ExportDialog):
         self.create_input_row(
             self.content_frame,
             row=1,
+            key="svg_height",
             left_label_text="Image Height",
             widget_type="entry",
             widget_options={
@@ -71,6 +73,7 @@ class ExportSVGDialog(ExportDialog):
         self.create_input_row(
             self.content_frame,
             row=2,
+            key="stroke_width",
             left_label_text="Stroke Width",
             widget_type="entry",
             widget_options={
@@ -85,6 +88,7 @@ class ExportSVGDialog(ExportDialog):
         self.create_input_row(
             self.content_frame,
             row=3,
+            key="path_resolution",
             left_label_text="Path Resolution",
             widget_type="spinbox",
             widget_options={
@@ -101,6 +105,7 @@ class ExportSVGDialog(ExportDialog):
         self.create_input_row(
             self.content_frame,
             row=4,
+            key="background_color",
             left_label_text="Background Color",
             widget_type="colorpicker",
             widget_options={
@@ -112,6 +117,7 @@ class ExportSVGDialog(ExportDialog):
         self.create_input_row(
             self.content_frame,
             row=5,
+            key="stroke_color",
             left_label_text="Stroke Color",
             widget_type="colorpicker",
             widget_options={
@@ -123,6 +129,7 @@ class ExportSVGDialog(ExportDialog):
         self.create_input_row(
             self.content_frame,
             row=6,
+            key="include_params",
             left_label_text="Include Parameters",
             widget_type="checkbutton",
             widget_options={"default": True},

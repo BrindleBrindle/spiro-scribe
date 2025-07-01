@@ -30,7 +30,7 @@ class SpiroScribeApp(tk.Tk):
 
         self.origin_position = (1, 1)
         self.workspace_dims = (32, 32)
-        self.workspace_units = "mm"
+        self.workspace_units = "metric"
 
         self.frame = tk.Frame(self)
         self.frame.grid(row=0, column=0, sticky="nsew")
@@ -58,11 +58,9 @@ class SpiroScribeApp(tk.Tk):
         button_image = ImageTk.PhotoImage(resized_image)
         self.info_button = tk.Button(self.menu_frame, image=button_image, command=self.open_info_dialog)
         self.info_button.grid(row=0, column=3, padx=(5, 0), sticky="e")
+        self.info_button.image = button_image  # keep reference to prevent garbage collection
 
-        # Keep a reference to the image to prevent garbage collection
-        self.info_button.image = button_image
-
-        self.circles = []
+        self.circle_array = []
         self.roulette = {}
 
         self.canvas = PreviewCanvas(
@@ -94,27 +92,32 @@ class SpiroScribeApp(tk.Tk):
         # Retrieve settings from dialog.
         export_settings = dialog.get_settings()
 
-        # Add workspace settings.
-        export_settings['svg_parameters']['workspace_width'] = self.workspace_dims[0]
-        export_settings['svg_parameters']['workspace_height'] = self.workspace_dims[1]
-        export_settings['svg_parameters']['workspace_units'] = self.workspace_units
-
         # Export SVG file if settings are not empty.
         if export_settings:
+            # Add workspace settings.
+            export_settings['workspace_width'] = self.workspace_dims[0]
+            export_settings['workspace_height'] = self.workspace_dims[1]
+            export_settings['workspace_units'] = self.workspace_units
+
             # Initialize instance of SVG post processor.
-            post_processor = SVGPostProcessor(export_settings['svg_parameters'])
+            post_processor = SVGPostProcessor(units=self.workspace_units, svg_settings=export_settings)
 
             # Add roulette (if specified).
             if self.roulette:
                 post_processor.parse_pattern(self.roulette)
 
-        # Export SVG to file.
-        post_processor.save_to_file(export_settings['file_path'])
+            # Add circle arrays (if specified).
+            if self.circle_array:
+                post_processor.parse_pattern(self.circle_array)
+                # {"type": "circle array", "D": [4.0, 11.0], "d": [5.5, 1.0], "n": [7, 20]}
+
+            # Export SVG to file.
+            post_processor.save_to_file(export_settings['file_path'])
 
     def open_export_gcode_dialog(self):
         # Open Export G Code dialog.
         # TODO: Pass in initial values for the dialog.
-        dialog = ExportGCodeDialog(self)
+        dialog = ExportGCodeDialog(parent=self, units=self.workspace_units)
 
         # Retrieve settings from dialog.
         export_settings = dialog.get_settings()
@@ -122,7 +125,7 @@ class SpiroScribeApp(tk.Tk):
         # Export G code if settings are not empty.
         if export_settings:
             # Initialize instance of G code post processor.
-            post_processor = GCodePostProcessor()
+            post_processor = GCodePostProcessor(units=self.workspace_units)
 
             # Add title comment (if specified).
             if export_settings['title_comment']['include']:
@@ -137,11 +140,10 @@ class SpiroScribeApp(tk.Tk):
             # Calculate origin offset.
             offset = self.compute_origin_offset(self.origin_position, self.workspace_dims)
 
-            # Add circles (if specified).
-            if self.circles:
-                for circle in self.circles:
-                    post_processor.parse_circle(circle_data=circle)
-                    post_processor.add_linebreak()
+            # Add circle array (if specified).
+            if self.circle_array:
+                post_processor.parse_circle_array(circle_data=self.circle_array)
+                post_processor.add_linebreak()
 
             # Add roulette (if specified).
             if self.roulette:

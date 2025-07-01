@@ -77,6 +77,7 @@ class ExportGCodeDialog(ExportDialog):
         self.create_input_row(
             self.content_frame,
             row=1,
+            key="safe_z",
             left_label_text="Safe Z Height",
             widget_type="entry",
             widget_options={
@@ -91,6 +92,7 @@ class ExportGCodeDialog(ExportDialog):
         self.create_input_row(
             self.content_frame,
             row=2,
+            key="jog_feed_xyz",
             left_label_text="Jog feedrate (XYZ)",
             widget_type="entry",
             widget_options={
@@ -105,6 +107,7 @@ class ExportGCodeDialog(ExportDialog):
         self.create_input_row(
             self.content_frame,
             row=3,
+            key="cut_feed_xy",
             left_label_text="Cut feedrate (XY)",
             widget_type="entry",
             widget_options={
@@ -119,6 +122,7 @@ class ExportGCodeDialog(ExportDialog):
         self.create_input_row(
             self.content_frame,
             row=4,
+            key="cut_feed_z",
             left_label_text="Cut feedrate (Z)",
             widget_type="entry",
             widget_options={
@@ -133,6 +137,7 @@ class ExportGCodeDialog(ExportDialog):
         self.create_input_row(
             self.content_frame,
             row=5,
+            key="depth_per_pass",
             left_label_text="Depth per pass",
             widget_type="entry",
             widget_options={
@@ -147,6 +152,7 @@ class ExportGCodeDialog(ExportDialog):
         self.create_input_row(
             self.content_frame,
             row=6,
+            key="num_passes",
             left_label_text="Number of passes",
             widget_type="spinbox",
             widget_options={
@@ -164,6 +170,7 @@ class ExportGCodeDialog(ExportDialog):
         self.create_input_row(
             self.content_frame,
             row=7,
+            key="cut_res",
             left_label_text="Resolution",
             widget_type="spinbox",
             widget_options={

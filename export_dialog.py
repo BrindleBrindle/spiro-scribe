@@ -195,17 +195,18 @@ class ExportDialog(tk.Toplevel):
         spacer = tk.Frame(self.content_frame)
         spacer.grid(row=6, column=0, columnspan=4, pady=3)  # add extra vertical padding
 
-    def create_input_row(self, parent_frame, row, left_label_text, widget_type, widget_options=None, right_label_text=None):
+    def create_input_row(self, parent_frame, row, key, left_label_text, widget_type, widget_options=None, right_label_text=None):
         """
         Create a row of GUI elements: a left label, a middle input widget, and an optional right label.
 
         Args:
             parent_frame (tk.Frame): The parent container to which the row will be added.
             row (int): The row index for grid placement.
-            left_label_text (str): Text for the left label.
+            key (str): Dictionary key by which the widgets can be accessed after creation.
+            left_label_text (str): Display text for the left label.
             widget_type (str): Type of middle widget ('entry', 'spinbox', 'radiobutton', 'checkbutton', or 'colorpicker').
             widget_options (dict): Options for configuring the middle widget (default: None).
-            right_label_text (str): Text for the optional right label (default: None).
+            right_label_text (str): Display text for the optional right label (default: None).
 
         Returns:
             dict: References to the created widgets (left_label, middle_widget, right_label).
@@ -294,31 +295,31 @@ class ExportDialog(tk.Toplevel):
             right_label.grid(row=row, column=3, padx=5, pady=5, sticky="w")
 
         # Store references to widgets for external access
-        self.widgets[left_label_text] = {"left_label": left_label, "middle_widget": middle_widget, "var": var, "right_label": right_label}
+        self.widgets[key] = {"left_label": left_label, "middle_widget": middle_widget, "var": var, "right_label": right_label}
 
-        return self.widgets[left_label_text]
+        return self.widgets[key]
 
     def get_widget_values(self):
         """
         Get the values of all user input widgets for export.
         """
         widget_values = {}
-        for left_label_text in self.widgets.keys():
-            widget_values[left_label_text] = self.get_widget_value(left_label_text)
+        for key in self.widgets.keys():
+            widget_values[key] = self.get_widget_value(key)
 
         return widget_values
 
-    def get_widget_value(self, label_text):
+    def get_widget_value(self, key):
         """
-        Get the value of a widget based on the left label's text.
+        Get the value of a widget based on its key.
 
         Args:
-            label_text (str): The text of the left label.
+            key (str): The text of the key.
 
         Returns:
             Any: The current value of the associated widget.
         """
-        widget_info = self.widgets.get(label_text)
+        widget_info = self.widgets.get(key)
         if not widget_info:
             return None
 
@@ -328,15 +329,15 @@ class ExportDialog(tk.Toplevel):
         else:
             return None
 
-    def set_widget_value(self, label_text, value):
+    def set_widget_value(self, key, value):
         """
-        Set the value of a widget based on the left label's text.
+        Set the value of a widget based on its key.
 
         Args:
-            label_text (str): The text of the left label.
+            key (str): The text of the key.
             value (any): The value to set for the associated widget.
         """
-        widget_info = self.widgets.get(label_text)
+        widget_info = self.widgets.get(key)
         if not widget_info:
             return
 

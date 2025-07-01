@@ -4,7 +4,8 @@ from fractions import Fraction
 
 
 class GCodePostProcessor:
-    def __init__(self):
+    def __init__(self, units):
+        self.units = units
         self.gcode = []  # stores generated G code lines
 
     def add_comment(self, comment, apply_formatting=True):
@@ -110,6 +111,7 @@ class GCodePostProcessor:
 
     def parse_circle_array(self):
         """ TODO: Add function contents here."""
+        # {"type": "circle array", "D": [4.0, 11.0], "d": [5.5, 1.0], "n": [7, 20]}
         pass
 
     def parse_circle(self, circle_data, toolpath_data, origin_offset):
@@ -132,8 +134,7 @@ class GCodePostProcessor:
                                                   "y": 2.5,
                                                   "radius": 1}
             toolpath_data (dict): Dictionary of machining parameters (defined in mm or in).
-                                  example_data = {"units": "imperial",
-                                                  "safe_z": 0.25,
+                                  example_data = {"safe_z": 0.25,
                                                   "jog_feed_xyz": 8.0,
                                                   "cut_feed_xy": 2.0,
                                                   "cut_feed_z": 1.0,
@@ -151,11 +152,8 @@ class GCodePostProcessor:
         if circle_data.get("type") != "circle":
             raise ValueError("The input data is not a circle.")
 
-        # Extract units.
-        units = toolpath_data['units']
-
         # Extract circle parameters (defined in mm). Convert to inches if units not metric.
-        if units == "metric":
+        if self.units == "metric":
             center_x = circle_data["x"]
             center_y = circle_data["y"]
             radius = circle_data["radius"]
@@ -165,15 +163,15 @@ class GCodePostProcessor:
             radius = circle_data["radius"] / 25.4
 
         # Extract toolpath parameters (already in the correct units).
-        safe_z = toolpath_data['safe_z']
-        jog_feed_xyz = toolpath_data['jog_feed_xyz']
-        cut_feed_xy = toolpath_data['cut_feed_xy']
-        cut_feed_z = toolpath_data['cut_feed_z']
-        depth_per_pass = toolpath_data['depth_per_pass']
-        num_passes = toolpath_data['num_passes']
+        safe_z = float(toolpath_data['safe_z'])
+        jog_feed_xyz = float(toolpath_data['jog_feed_xyz'])
+        cut_feed_xy = float(toolpath_data['cut_feed_xy'])
+        cut_feed_z = float(toolpath_data['cut_feed_z'])
+        depth_per_pass = int(toolpath_data['depth_per_pass'])
+        num_passes = int(toolpath_data['num_passes'])
 
         # Extract origin offsets (defined in mm). Convert to inches if units not metric.
-        if units == "metric":
+        if self.units == "metric":
             offset_x, offset_y = origin_offset
         else:
             offset_x = origin_offset(0) / 25.4
@@ -231,8 +229,7 @@ class GCodePostProcessor:
                                                   "d": 3.5,
                                                   "display_res": 200}
             toolpath_data (dict): Dictionary of machining parameters (defined in mm or in).
-                                  example_data = {"units": "imperial",
-                                                  "safe_z": 0.25,
+                                  example_data = {"safe_z": 0.25,
                                                   "jog_feed_xyz": 8.0,
                                                   "cut_feed_xy": 2.0,
                                                   "cut_feed_z": 1.0,
@@ -261,11 +258,8 @@ class GCodePostProcessor:
         if roulette_data.get("type") != "roulette":
             raise ValueError("The input data is not a roulette.")
 
-        # Extract units.
-        units = toolpath_data['units']
-
         # Extract roulette parameters (defined in mm). Convert to inches if units not metric.
-        if units == "metric":
+        if self.units == "metric":
             R = roulette_data["R"]
             r = roulette_data["r"]
             s = roulette_data["s"]
@@ -277,16 +271,16 @@ class GCodePostProcessor:
             d = roulette_data["d"] / 25.4
 
         # Extract toolpath parameters (already in correct units).
-        safe_z = toolpath_data['safe_z']
-        jog_feed_xyz = toolpath_data['jog_feed_xyz']
-        cut_feed_xy = toolpath_data['cut_feed_xy']
-        cut_feed_z = toolpath_data['cut_feed_z']
-        depth_per_pass = toolpath_data['depth_per_pass']
-        num_passes = toolpath_data['num_passes']
-        cut_res = toolpath_data['cut_res']
+        safe_z = float(toolpath_data['safe_z'])
+        jog_feed_xyz = float(toolpath_data['jog_feed_xyz'])
+        cut_feed_xy = float(toolpath_data['cut_feed_xy'])
+        cut_feed_z = float(toolpath_data['cut_feed_z'])
+        depth_per_pass = float(toolpath_data['depth_per_pass'])
+        num_passes = int(toolpath_data['num_passes'])
+        cut_res = int(toolpath_data['cut_res'])
 
         # Extract origin offsets (defined in mm).
-        if units == "metric":
+        if self.units == "metric":
             offset_x, offset_y = origin_offset
         else:
             offset_x = origin_offset(0) / 25.4
