@@ -1,5 +1,4 @@
 import tkinter as tk
-import numpy as np
 
 
 class CircleSettings(tk.Frame):
@@ -11,12 +10,12 @@ class CircleSettings(tk.Frame):
         row_headings = ["Ring 1", "Ring 2", "Ring 3"]
 
         # Create table headers
-        for col, heading in enumerate(column_headings):  # The first column is for row headings
+        for col, heading in enumerate(column_headings):  # first column is for row headings
             label = tk.Label(self, text=heading)
             label.grid(row=0, column=col, padx=5, pady=5)
 
         # Create the table rows
-        self.widgets = []  # Store widget references for later use
+        self.widgets = []  # store widget references for later use
         for row, row_heading in enumerate(row_headings, start=1):
             # Row heading
             label = tk.Label(self, text=row_heading)
@@ -51,12 +50,12 @@ class CircleSettings(tk.Frame):
 
     def toggle_row(self, row):
         """Enable or disable the widgets in a row based on the state of the Checkbutton."""
-        row_widgets = self.widgets[row - 1]  # Get the widgets for the specified row
-        is_enabled = row_widgets[0].get()  # Checkbutton state (BooleanVar)
+        row_widgets = self.widgets[row - 1]  # get the widgets for the specified row
+        is_enabled = row_widgets[0].get()  # checkbutton state (BooleanVar)
 
         # Enable or disable the widgets in the row
         state = "normal" if is_enabled else "disabled"
-        for widget in row_widgets[1:]:  # Skip the Checkbutton (first element)
+        for widget in row_widgets[1:]:  # skip the Checkbutton (first element)
             widget.config(state=state)
 
         self.event_generate("<<UpdateCircleAction>>")  # notify parent
@@ -64,36 +63,29 @@ class CircleSettings(tk.Frame):
     def update_spinbox_value(self):
         self.event_generate("<<UpdateCircleAction>>")  # notify parent
 
-    def get_ring_data(self):
+    def get_circle_array_data(self):
         """
         Generate pattern data from the current widget values.
 
-        Arguments:
-            None
+        Args:
+        None
 
         Returns:
-            data (list): A list of circle elements (dicts) defined in mm.
-                         example_element = {"type": "circle",
-                                            "x": 6.5,
-                                            "y": 2.5,
-                                            "radius": 1}
+        Dictionary of parameters describing the circular arrays.
+          example_data = {"type": "circle array", "D": [4.0, 11.0], "d": [5.5, 1.0], "n": [7, 20]}
         """
-        data = []
+        ring_diameter = []
+        circle_diameter = []
+        num_circles = []
+
         for row_widgets in self.widgets:
-            ring_enabled = row_widgets[0].get()  # Boolean value from Checkbutton
-
+            ring_enabled = bool(row_widgets[0].get())  # boolean value from checkbutton
             if ring_enabled:
-                num_circles = int(row_widgets[3].get())  # String value from Spinbox
-                ring_radius = float(row_widgets[1].get()) / 2  # String value from Spinbox
-                circle_radius = float(row_widgets[2].get()) / 2  # String value from Spinbox
-                angles = np.linspace(0, 2 * np.pi, num_circles, endpoint=False)
+                num_circles.append(int(row_widgets[3].get()))
+                ring_diameter.append(float(row_widgets[1].get()))
+                circle_diameter.append(float(row_widgets[2].get()))
 
-                for theta in angles:
-                    x = ring_radius * np.cos(theta)
-                    y = ring_radius * np.sin(theta)
-                    data.append({'type': 'circle', 'x': float(x), 'y': float(y), 'radius': float(circle_radius)})
-
-        return data
+        return {"type": 'circle array', "D": ring_diameter, "d": circle_diameter, "n": num_circles}
 
 
 # Main application demonstrating how to embed the class in an application.

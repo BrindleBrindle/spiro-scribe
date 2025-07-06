@@ -14,14 +14,11 @@ class PreviewCanvas(tk.Canvas):
         """
         Initialize the PreviewCanvas object.
 
-        Arguments:
+        Args:
             parent: Parent tkinter widget.
             width (int): Width of the canvas in px.
             height (int): Height the canvas in px.
             mm_to_px_ratio (float): Multiplier for conversion from millimeters to pixels.
-
-        Returns:
-            None
         """
         super().__init__(parent, width=width, height=height, *args, **kwargs)
 
@@ -76,7 +73,7 @@ class PreviewCanvas(tk.Canvas):
         """
         Render multiple items on the canvas at once.
 
-        Arguments
+        Args:
             pattern (list): List of drawing elements defined in millimeters.
                             Each element must be a circle or line:
                             {'type': 'circle', 'x': <val>, 'y': <val>, 'radius': <val>}
@@ -84,34 +81,32 @@ class PreviewCanvas(tk.Canvas):
 
             color (str):    Line display color as string ("#FFF" or "#FFFFFF").
             width (int):    Line display width in pixels.
-
-        Returns:
-            None
         """
         self.pattern = pattern
 
     def refresh_pattern(self):
-        self.config(bg=self.bg_color)  # Set background color
-        self.delete("all")  # Clear the canvas
+        self.config(bg=self.bg_color)  # set background color
+        self.delete("all")  # clear the canvas
 
         # Iterate through all elements in the pattern
-        print(self.pattern)
         if not self.is_pattern_empty(self.pattern):
-            for element in self.pattern:
-                if element['type'] == 'circle':
-                    self._draw_circle(
-                        element['x'], element['y'], element['radius'], self.pattern_color, self.pattern_linewidth
-                    )
-                elif element['type'] == 'line':
-                    self._draw_line(
-                        element['x1'], element['y1'], element['x2'], element['y2'],
-                        self.pattern_color, self.pattern_linewidth
-                    )
-                elif element['type'] == 'roulette':
-                    self._draw_roulette(
-                        element['R'], element['r'], element['s'], element['d'],
-                        element['display res'], self.pattern_color, self.pattern_linewidth
-                    )
+
+            if self.pattern['type'] == 'circle':
+                self._draw_circle(self.pattern['x'], self.pattern['y'], self.pattern['radius'],
+                                  self.pattern_color, self.pattern_linewidth)
+
+            elif self.pattern['type'] == 'line':
+                self._draw_line(self.pattern['x1'], self.pattern['y1'], self.pattern['x2'],
+                                self.pattern['y2'], self.pattern_color, self.pattern_linewidth)
+
+            elif self.pattern['type'] == 'circle array':
+                self._draw_circle_array(self.pattern['D'], self.pattern['d'], self.pattern['n'],
+                                        self.pattern_color, self.pattern_linewidth)
+
+            elif self.pattern['type'] == 'roulette':
+                self._draw_roulette(self.pattern['R'], self.pattern['r'], self.pattern['s'],
+                                    self.pattern['d'], self.pattern['display res'],
+                                    self.pattern_color, self.pattern_linewidth)
 
         # Draw crosshair
         if self.show_origin:
@@ -121,7 +116,7 @@ class PreviewCanvas(tk.Canvas):
         """
         Convert millimeters to pixels.
 
-        Arguments:
+        Args:
             mm (float): Amount defined in millimeters.
 
         Returns:
@@ -133,12 +128,10 @@ class PreviewCanvas(tk.Canvas):
         """
         Draw a red crosshair on the canvas based on a 3x3 matrix position.
 
-        Arguments:
+        Args:
             position (tuple): A tuple (i, j) where:
                               i - the row index (0 to 2),
                               j - the column index (0 to 2).
-        Returns;
-            None
         """
         # Clear the canvas before drawing the crosshair
         self.delete("crosshair")
@@ -181,7 +174,7 @@ class PreviewCanvas(tk.Canvas):
         """
         Render a roulette on the canvas.
 
-        Arguments:
+        Args:
             R (float): Radius of the fixed circle.
             r (float): Radius of the rolling circle.
             s (int): Scaling factor for the rolling circle radius, either -1 or 1.
@@ -189,9 +182,6 @@ class PreviewCanvas(tk.Canvas):
             display_res (int): Resolution of the curve (number of points).
             color (str): The display color of the line (#FFF or #FFFFFF).
             width (int): The display width of the line in px.
-
-        Returns:
-            None
         """
         def compute_point(theta):
             """Helper function to compute the (x, y) point for a given theta."""
@@ -232,20 +222,46 @@ class PreviewCanvas(tk.Canvas):
         # Close the loop by connecting the last point to the first point.
         self._draw_line(start_x, start_y, first_x, first_y, color, width)
 
+    def _draw_circle_array(self, D, d, n, color, width):
+        """
+        Render multiple circle arrays on the canvas at once.
+
+        Args:
+            D (list): Ring diameters, defined in mm. (float)
+            d (list): Circle diameters, defined in mm. (float)
+            n (list): Number of equally-spaced circles in array. (int)
+            color (str): The display color of the circle boundary (#FFF or #FFFFFF).
+            width (int): The display width of the circle boundary in px.
+        """
+        for i in range(0, len(D)):
+            angles = np.linspace(0, 2 * np.pi, n[i], endpoint=False)
+            for theta in angles:
+                center_x_mm = (D[i] / 2.0) * np.cos(theta)
+                center_y_mm = (D[i] / 2.0) * np.sin(theta)
+
+                center_x_px = self._origin_x + self._mm_to_px(center_x_mm)
+                center_y_px = self._origin_y - self._mm_to_px(center_y_mm)
+                radius_px = self._mm_to_px(d[i] / 2.0)
+
+                # Draw the circle with a border
+                self.create_oval(center_x_px - radius_px,
+                                 center_y_px - radius_px,
+                                 center_x_px + radius_px,
+                                 center_y_px + radius_px,
+                                 outline=color,
+                                 width=width)
+
     def _draw_line(self, x1, y1, x2, y2, color, width):
         """
         Render a line on the canvas.
 
-        Arguments:
+        Args:
             x1 (float): The x-coordinate of the line's start point in mm.
             y1 (float): The y-coordinate of the line's start point in mm.
             x2 (float): The x-coordinate of the line's end point in mm.
             y2 (float): The y-coordinate of the line's end point in mm.
             color (str): The display color of the line (#FFF or #FFFFFF).
             width (int): The display width of the line in px.
-
-        Returns:
-            None
         """
         x1_px = self._origin_x + self._mm_to_px(x1)
         y1_px = self._origin_y - self._mm_to_px(y1)
@@ -258,15 +274,12 @@ class PreviewCanvas(tk.Canvas):
         """
         Render a circle on the canvas.
 
-        Arguments:
+        Args:
             x (float): The x-coordinate of the circle's center in mm.
             y (float): The y-coordinate of the circle's center in mm.
             radius (float): The radius of the circle in mm.
             color (str): The display color of the circle boundary (#FFF or #FFFFFF).
             width (int): The display width of the circle boundary in px.
-
-        Returns:
-            None
         """
         x_px = self._origin_x + self._mm_to_px(x)
         y_px = self._origin_y - self._mm_to_px(y)
@@ -287,12 +300,11 @@ class PreviewCanvas(tk.Canvas):
         Determine if the provided string is a valid hex color. A valid string
         contains a # symbol followed by 3 or 6 hex chars (#FFF or #FFFFFF).
 
-        Arguments:
+        Args:
             color (str): Color string to validate.
 
         Returns:
             True if valid; otherwise, False.
-
         """
         pattern = r"^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
         return bool(re.match(pattern, color))
@@ -301,7 +313,7 @@ class PreviewCanvas(tk.Canvas):
         """
         Determine if the provided linewidth is valid.
 
-        Arguments:
+        Args:
             lw (int): Linewidth defined in px.
 
         Returns:

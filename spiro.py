@@ -16,12 +16,6 @@ class SpiroScribeApp(tk.Tk):
     def __init__(self, *args, **kwargs):
         """
         Initialize the SpiroScribeApp.
-
-        Arguments:
-            None
-
-        Returns:
-            None
         """
         super().__init__(*args, **kwargs)  # pass arguments to tk.Tk
 
@@ -60,7 +54,7 @@ class SpiroScribeApp(tk.Tk):
         self.info_button.grid(row=0, column=3, padx=(5, 0), sticky="e")
         self.info_button.image = button_image  # keep reference to prevent garbage collection
 
-        self.circle_array = []
+        self.circle_array = {}
         self.roulette = {}
 
         self.canvas = PreviewCanvas(
@@ -109,7 +103,6 @@ class SpiroScribeApp(tk.Tk):
             # Add circle arrays (if specified).
             if self.circle_array:
                 post_processor.parse_pattern(self.circle_array)
-                # {"type": "circle array", "D": [4.0, 11.0], "d": [5.5, 1.0], "n": [7, 20]}
 
             # Export SVG to file.
             post_processor.save_to_file(export_settings['file_path'])
@@ -142,15 +135,15 @@ class SpiroScribeApp(tk.Tk):
 
             # Add circle array (if specified).
             if self.circle_array:
-                post_processor.parse_circle_array(circle_data=self.circle_array)
-                post_processor.add_linebreak()
+                post_processor.parse_circle_array(circle_array_data=self.circle_array,
+                                                  toolpath_data=export_settings['toolpath_parameters'],
+                                                  origin_offset=offset)
 
             # Add roulette (if specified).
             if self.roulette:
                 post_processor.parse_roulette(roulette_data=self.roulette,
                                               toolpath_data=export_settings['toolpath_parameters'],
                                               origin_offset=offset)
-                post_processor.add_linebreak()
 
             # Add end sequence (if specified).
             if export_settings['end_sequence']['include']:
@@ -222,8 +215,8 @@ class SpiroScribeApp(tk.Tk):
         Redraw the pattern on the canvas in response to a <<UpdateCircleAction>>
         event triggered by the widgets on the Circle Settings tab.
         """
-        self.circles = event.widget.get_ring_data()
-        self.canvas.set_pattern(self.circles)
+        self.circle_array = event.widget.get_circle_array_data()
+        self.canvas.set_pattern(self.circle_array)
         self.canvas.refresh_pattern()
 
     def handle_update_roulette_event(self, event):
@@ -232,7 +225,7 @@ class SpiroScribeApp(tk.Tk):
         event triggered by the widgets on the Roulette Settings tab.
         """
         self.roulette = event.widget.get_roulette_data()
-        self.canvas.set_pattern([self.roulette])  # must be a list
+        self.canvas.set_pattern(self.roulette)
         self.canvas.refresh_pattern()
 
 
@@ -240,11 +233,8 @@ def center_window(window):
     """
     Center a tkinter window on the screen.
 
-    Arguments:
+    Args:
         window (tk.Tk): The tkinter window to center.
-
-    Returns:
-        None
     """
     # Get most up-to-date attribute info
     window.update_idletasks()

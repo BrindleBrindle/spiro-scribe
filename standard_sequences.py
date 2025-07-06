@@ -4,23 +4,24 @@ import inspect
 def get_example_title(units):
     """ Generate example title block. """
     title_block = ""
-    title_block += "(Title: Spirograph Engraving)\n"
-    title_block += "(Author: Erika Mustermann)\n"
-    title_block += "(Date: MM-DD-YYYY)\n"
-    title_block += "(Description: Four-lobed clover pattern)\n"
+    title_block += "\t(DESCRIPTION)\n"
+    title_block += "\t(Title: Spirograph Engraving)\n"
+    title_block += "\t(Author: Erika Mustermann)\n"
+    title_block += "\t(Date: MM-DD-YYYY)\n"
+    title_block += "\t(Description: Four-lobed clover pattern)\n"
 
     if units == "imperial":
-        setup_text = "(Setup: Home Z 0.25\" above stock surface)\n"
+        setup_text = "\t(Setup: Home Z 0.25\" above stock surface)\n"
     else:
-        setup_text = "(Setup: Home Z 6.35mm above stock surface)\n"
+        setup_text = "\t(Setup: Home Z 6.35mm above stock surface)\n"
 
     title_block += setup_text
-    title_block += "(Setup: Home XY at center of square stock)\n"
+    title_block += "\t(Setup: Home XY at center of square stock)\n"
 
     if units == "imperial":
-        tool_text = "(Cutting Tool: End mill, 2 flute, 1/16\" OD, 1/8\" LOC, carbide)\n"
+        tool_text = "\t(Cutting Tool: End mill, 2 flute, 1/16\" OD, 1/8\" LOC, carbide)\n"
     else:
-        tool_text = "(Cutting Tool: End mill, 2 flute, 1.6mm OD, 3mm LOC, carbide)"
+        tool_text = "\t(Cutting Tool: End mill, 2 flute, 1.6mm OD, 3mm LOC, carbide)"
 
     title_block += tool_text
 
@@ -30,20 +31,20 @@ def get_example_title(units):
 def get_start_sequence(units):
     """ Generate standard start sequence. """
     start_sequence = ""
-    start_sequence += "(Start Sequence)\n"
-    start_sequence += "G90 (use absolute distance mode)\n"
+    start_sequence += "(START SEQUENCE)\n"
+    start_sequence += "\tG90 (use absolute distance mode)\n"
 
     if units == "imperial":
-        length_unit_text = "G20 (use inch length units)\n"
+        length_unit_text = "\tG20 (use inch length units)\n"
     else:
-        length_unit_text = "G21 (use mm length units)\n"
+        length_unit_text = "\tG21 (use mm length units)\n"
 
     start_sequence += length_unit_text
-    start_sequence += "G94 (feed in units per minute)\n"
-    start_sequence += "G80 (cancel any active canned cycle)\n"
-    start_sequence += "G40 (cancel cutter radius compensation)\n"
-    start_sequence += "G49 (cancel tool length compensation)\n"
-    start_sequence += "G17 (set current plane to XY)"
+    start_sequence += "\tG94 (feed in units per minute)\n"
+    start_sequence += "\tG80 (cancel any active canned cycle)\n"
+    start_sequence += "\tG40 (cancel cutter radius compensation)\n"
+    start_sequence += "\tG49 (cancel tool length compensation)\n"
+    start_sequence += "\tG17 (set current plane to XY)"
 
     return start_sequence.strip()  # strip away any trailing whitespace
 
@@ -51,10 +52,10 @@ def get_start_sequence(units):
 def get_end_sequence():
     """ Generate standard end sequence. """
     end_sequence = ""
-    end_sequence += "(End Sequence)\n"
-    end_sequence += "G00 Z<safe_Z> (rapid move to safe height)\n"
-    end_sequence += "G00 X0 Y0 (rapid move to origin)\n"
-    end_sequence += "M02 (end program)"
+    end_sequence += "(END SEQUENCE)\n"
+    end_sequence += "\tG00 Z<safe_Z> (rapid move to safe height)\n"
+    end_sequence += "\tG00 X0 Y0 (rapid move to origin)\n"
+    end_sequence += "\tM02 (end program)"
 
     return end_sequence.strip()  # strip away any trailing whitespace
 
