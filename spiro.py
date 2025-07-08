@@ -4,11 +4,11 @@ from user_controls import UserControlsPane
 from preview_canvas import PreviewCanvas
 from gcode_post_processor import GCodePostProcessor
 from svg_post_processor import SVGPostProcessor
-from settings_dialog import SettingsDialog
 from info_dialog import InfoDialog
 from status_bar import StatusBar
 from export_svg_dialog import ExportSVGDialog
 from export_gcode_dialog import ExportGCodeDialog
+from workspace_settings_dialog import WorkSettingsDialog
 from PIL import Image, ImageTk
 
 
@@ -43,7 +43,7 @@ class SpiroScribeApp(tk.Tk):
                                              command=self.open_export_gcode_dialog)
         self.export_gcode_button.grid(row=0, column=1, padx=(5, 5), sticky="nsew")
 
-        self.settings_button = tk.Button(self.menu_frame, text="Settings", command=self.open_settings_dialog)
+        self.settings_button = tk.Button(self.menu_frame, text="Workspace Settings", command=self.open_settings_dialog)
         self.settings_button.grid(row=0, column=2, padx=(5, 5), sticky="nsw")
 
         cwd = os.getcwd()
@@ -172,18 +172,20 @@ class SpiroScribeApp(tk.Tk):
 
     def open_settings_dialog(self):
         # Pass in initial values for the dialog
-        dialog = SettingsDialog(self,
-                                initial_color=self.canvas.bg_color,
-                                show_origin=self.canvas.show_origin,
-                                origin_position=self.canvas.origin_position
-                                )
-        settings = dialog.get_settings()
-        self.origin_position = settings['origin_position']
-        self.canvas.set_bg_color(settings['bg_color'])
-        self.canvas.show_origin = settings['show_origin']
-        self.canvas.origin_position = settings['origin_position']
-        self.canvas.refresh_pattern()
-        self.status_bar.origin_position = settings['origin_position']
+        dialog = WorkSettingsDialog(self)
+
+        # dialog = WorkSettingsDialog(self,
+        #                         initial_color=self.canvas.bg_color,
+        #                         show_origin=self.canvas.show_origin,
+        #                         origin_position=self.canvas.origin_position
+        #                         )
+        # settings = dialog.get_settings()
+        # self.origin_position = settings['origin_position']
+        # self.canvas.set_bg_color(settings['bg_color'])
+        # self.canvas.show_origin = settings['show_origin']
+        # self.canvas.origin_position = settings['origin_position']
+        # self.canvas.refresh_pattern()
+        # self.status_bar.origin_position = settings['origin_position']
 
     def open_info_dialog(self):
         text_list = [

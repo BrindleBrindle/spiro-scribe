@@ -1,33 +1,113 @@
-import os
 import tkinter as tk
-import entry_validation as ev
-
 from tkinter import ttk
 from tkinter import colorchooser
-from tkinter import filedialog
-from PIL import Image, ImageTk
+
+import entry_validation as ev
 
 
-class ExportDialog(tk.Toplevel):
+class WorkSettingsDialog(tk.Toplevel):
     def __init__(self, parent, *args, **kwargs):
-        """
-        Generic file export dialog.
-
-        Args:
-            parent (tk.Tk): Parent tkinter application window.
-        """
         super().__init__(parent, *args, **kwargs)
 
         self.parent = parent
         self.widgets = {}
         self.settings = {}
-        self.file_path = None
 
-        # Initialize dialog settings.
-        self.initialize_dialog_settings()
+        self.dialog_title = "Workspace Settings"
+        self.content_frame_title = "User Settings"
 
-        # Create dialog layout.
-        self.create_layout()
+        self.defaults = {'workspace_size': 32,
+                         'workspace_units': 'metric',
+                         'background_color': '#FFFF80',
+                         'show_origin': True,
+                         'origin_position': (1, 1)}
+
+        self.origin_position = self.defaults['origin_position']
+
+        # Create a frame for the main widgets.
+        self.main_frame = tk.Frame(self)
+        self.main_frame.grid(row=0, column=0, padx=10, pady=(5, 0))
+        self.main_frame.columnconfigure(0, weight=1)
+
+        # Create a frame for the user input widgets.
+        self.content_frame = ttk.LabelFrame(self.main_frame, text=f"{self.content_frame_title}")
+        self.content_frame.grid(row=0, column=0, columnspan=2, padx=5, pady=(5, 10), sticky="ew")
+
+        # Register entry validation functions
+        validate_float_pos_cmd = self.register(ev.validate_float_pos)
+
+        # Row 0: Workspace Units
+        self.create_input_row(
+            self.content_frame,
+            row=0,
+            key="workspace_units",
+            left_label_text="Workspace Units",
+            widget_type="radiobutton",
+            widget_options={
+                "default": self.defaults['workspace_units'],
+                "options": [("imperial", "in", self.on_units_selected), ("metric", "mm", self.on_units_selected)]  # (value, label, command)
+            },
+            right_label_text="",
+        )
+
+        # Row 1: Workspace Size
+        self.create_input_row(
+            parent_frame=self.content_frame,
+            row=1,
+            key="workspace_size",
+            left_label_text="Workspace Size",
+            widget_type="entry",
+            widget_options={
+                "default": self.defaults['workspace_size'],
+                "width": 8,
+                "validate": "key",
+                "validatecommand": (validate_float_pos_cmd, "%P"),
+            },
+            right_label_text={"imperial": '[in]', "metric": '[mm]'}[self.defaults['workspace_units']]
+        )
+
+        # Row 2: Background Color
+        self.create_input_row(
+            self.content_frame,
+            row=2,
+            key="background_color",
+            left_label_text="Background Color",
+            widget_type="colorpicker",
+            widget_options={
+                "default": self.defaults['background_color']
+            },
+            right_label_text="",
+        )
+
+        # Row 3: Show Origin
+        self.create_input_row(
+            self.content_frame,
+            row=3,
+            key="show_origin",
+            left_label_text="Show Origin",
+            widget_type="checkbutton",
+            widget_options={
+                "default": self.defaults['show_origin']
+            },
+            right_label_text="",
+        )
+
+        # Row 4: Origin Position
+        self.create_origin_picker(self.content_frame, row=4)
+
+        # Add a cancel button
+        self.cancel_button = tk.Button(self.main_frame, text="Cancel", command=self.cancel)
+        self.cancel_button.grid(row=1, column=0, padx=5, pady=(5, 15), sticky="nse")
+        self.bind("<Escape>", self.cancel)
+
+        # Add an apply button
+        self.apply_button = tk.Button(self.main_frame, text="Apply", command=self.apply)
+        self.apply_button.grid(row=1, column=1, padx=5, pady=(5, 15), sticky="nse")
+        self.bind("<Return>", self.apply)
+
+        # Set selected units
+        self.selected_units = self.get_widget_value('workspace_units')
+        self.previous_units = self.selected_units
 
         # Configure window properties.
         self.title(self.dialog_title)
@@ -52,153 +132,8 @@ class ExportDialog(tk.Toplevel):
         # Stop main script until dialog is dismissed.
         self.wait_window(self)
 
-    def initialize_dialog_settings(self):
-        """
-        Hook for subclasses to customize dialog settings.
-        """
-        self.dialog_title = "Export Dialog"
-        self.content_frame_title = "User Settings"
-        self.defaultextension = None
-        self.filetypes = [("All Files", "*.*")]
-
-        self.defaults = {
-            "entry": 10,
-            "spinbox": 10,
-            "radiobutton": "1",
-            "checkbutton": True,
-            "colorpicker": "lavender"
-        }
-
     def create_layout(self):
-        # Create a frame for the main widgets.
-        self.main_frame = tk.Frame(self)
-        self.main_frame.grid(row=0, column=0, padx=10, pady=(5, 0))
-        self.main_frame.columnconfigure(1, weight=1)
-
-        # Create a frame for the user input widgets.
-        self.content_frame = ttk.LabelFrame(self.main_frame, text=f"{self.content_frame_title}")
-        self.content_frame.grid(row=0, column=0, columnspan=3, padx=5, pady=(5, 10), sticky="ew")
-        self.content_frame.columnconfigure(0, weight=0)
-        self.content_frame.columnconfigure(2, weight=1)
-
-        # Create output path bar.
-        cwd = os.getcwd()
-        folder_image = Image.open(cwd + "\\images\\" + "folder.png")
-        resized_folder_image = folder_image.resize((18, 18))  # resize to fit the button
-        folder_button_image = ImageTk.PhotoImage(resized_folder_image)
-
-        self.out_location_label = tk.Label(self.main_frame, anchor="w", text="Output")
-        self.out_location_var = tk.StringVar(value="")
-        self.out_location_entry = tk.Entry(self.main_frame, state="disabled", textvariable=self.out_location_var)
-        self.out_location_button = tk.Button(self.main_frame, anchor="w", image=folder_button_image,
-                                             command=self.raise_save_as)
-        self.out_location_label.grid(row=2, column=0, padx=(10, 5), pady=(5, 10), sticky="w")
-        self.out_location_entry.grid(row=2, column=1, padx=(5, 5), pady=(5, 10), sticky="nsew")
-        self.out_location_button.grid(row=2, column=2, padx=(5, 10), pady=(5, 10), sticky="w")
-        self.out_location_button.image = folder_button_image  # keep a reference
-
-        self.export_button_frame = tk.Frame(self)
-        self.export_button_frame.grid(row=1, column=0, padx=10, pady=(5, 10), sticky="nsew")
-        self.export_button_frame.columnconfigure(0, weight=1)
-
-        # Add a cancel button
-        self.cancel_button = tk.Button(self.export_button_frame, text="Cancel", command=self.close)
-        self.cancel_button.grid(row=0, column=0, padx=5, pady=(5, 5), sticky="nse")
-        self.bind("<Return>", self.close)
-
-        # Add an export button
-        self.export_button = tk.Button(self.export_button_frame, state="disabled", text="Export", command=self.export)
-        self.export_button.grid(row=0, column=1, padx=5, pady=(5, 5), sticky="nse")
-        self.bind("<Return>", self.close)
-
-        # Allow subclasses to add content.
-        self.add_content()
-
-    def add_content(self):
-        """
-        Hook for subclasses to add custom widgets to the content frame.
-        """
-
-        # Add an empty row for padding
-        spacer = tk.Frame(self.content_frame)
-        spacer.grid(row=0, column=0, columnspan=4, pady=3)  # add extra vertical padding
-
-        # Register entry validation functions
-        validate_int_pos_cmd = self.register(ev.validate_int_pos)
-
-        self.create_input_row(
-            self.content_frame,
-            row=1,
-            key="entry",
-            left_label_text="Sample Entry",
-            widget_type="entry",
-            widget_options={
-                "default": self.defaults['entry'],
-                "width": 16,
-                "validate": "key",
-                "validatecommand": (validate_int_pos_cmd, "%P"),
-            },
-            right_label_text="[units]",
-        )
-
-        self.create_input_row(
-            self.content_frame,
-            row=2,
-            key="spinbox",
-            left_label_text="Sample Spinbox",
-            widget_type="spinbox",
-            widget_options={
-                "default": self.defaults['spinbox'],
-                "from_": 1,
-                "to": 100,
-                "increment": 1,
-                "width": 8,
-                "validate": "key",
-                "validatecommand": (validate_int_pos_cmd, "%P"),
-            },
-            right_label_text="[units]",
-        )
-
-        self.create_input_row(
-            self.content_frame,
-            row=3,
-            key="radiobutton",
-            left_label_text="Sample Radiobutton",
-            widget_type="radiobutton",
-            widget_options={
-                "default": self.defaults['radiobutton'],
-                "options": [("1", "Option 1", None), ("2", "Option 2", None)],  # (value, label, command)
-            },
-            right_label_text="",
-        )
-
-        self.create_input_row(
-            self.content_frame,
-            row=4,
-            key="checkbutton",
-            left_label_text="Sample Checkbutton",
-            widget_type="checkbutton",
-            widget_options={
-                "default": self.defaults['checkbutton']
-            },
-            right_label_text="",
-        )
-
-        self.create_input_row(
-            self.content_frame,
-            row=5,
-            key="colorpicker",
-            left_label_text="Sample Colorpicker",
-            widget_type="colorpicker",
-            widget_options={
-                "default": self.defaults['colorpicker']
-            },
-            right_label_text="",
-        )
-
-        # Add an empty row for padding
-        spacer = tk.Frame(self.content_frame)
-        spacer.grid(row=6, column=0, columnspan=4, pady=3)  # add extra vertical padding
+        pass
 
     def create_input_row(self, parent_frame, row, key, left_label_text, widget_type, widget_options=None, right_label_text=None):
         """
@@ -296,7 +231,7 @@ class ExportDialog(tk.Toplevel):
         # Create the optional right label
         right_label = None
         if right_label_text:
-            right_label = tk.Label(parent_frame, text=right_label_text, width=16, anchor="w")
+            right_label = tk.Label(parent_frame, text=right_label_text, width=6, anchor="w")
             right_label.grid(row=row, column=3, padx=5, pady=5, sticky="w")
 
         # Store references to widgets for external access
@@ -304,15 +239,93 @@ class ExportDialog(tk.Toplevel):
 
         return self.widgets[key]
 
-    def get_widget_values(self):
+    def create_origin_picker(self, parent, row):
         """
         Get the values of all user input widgets for export.
         """
-        widget_values = {}
-        for key in self.widgets.keys():
-            widget_values[key] = self.get_widget_value(key)
+        # Add the label to the left of the buttons
+        self.origin_position_label = tk.Label(parent, text="Origin Position")
+        self.origin_position_label.grid(row=row, column=0, padx=(15, 5), pady=(5, 10), sticky="w")
 
-        return widget_values
+        # Create the 3x3 grid of buttons
+        self.button_frame = tk.Frame(parent)
+        self.button_frame.grid(row=row, column=1, padx=0, pady=(5, 15), sticky="w")
+
+        # Dictionary to store button references
+        self.buttons = {}
+
+        # Create a 3x3 grid of buttons
+        arrows = ["↖", "↑", "↗", "←", "•", "→", "↙", "↓", "↘"]
+        for i in range(3):
+            for j in range(3):
+                button = tk.Button(
+                    self.button_frame,
+                    text=arrows[i * 3 + j],
+                    font=("Arial", 10),
+                    width=2,
+                    height=1,
+                    relief="sunken" if (i, j) == self.defaults['origin_position'] else "raised",  # preselect button
+                    command=lambda b=(i, j): self.toggle_button(b)  # pass button position
+                )
+                button.grid(row=i, column=j, padx=2, pady=2)
+                self.buttons[(i, j)] = button  # store a reference to the button
+
+    def on_units_selected(self):
+        """
+        Callback method called when unit radio button is selected.
+        """
+        units = self.get_widget_value('workspace_units')
+        units_changed = True if units != self.previous_units else False
+
+        # Update righthand label for workspace size field.
+        label = {'imperial': '[in]', 'metric': '[mm]'}
+        self.widgets['workspace_size']['right_label'].config(text=label[units])
+
+        # Convert field value if unit system changed.
+        if units_changed:
+            workspace_width_entry = self.get_widget_value('workspace_size')
+            if workspace_width_entry:
+                workspace_width = self.convert_value(float(workspace_width_entry), units)
+                workspace_width_rounded = round(workspace_width, 5)
+                self.set_widget_value('workspace_size', workspace_width_rounded)
+                self.widgets['workspace_size']['middle_widget'].icursor(tk.END)  # move cursor to end of line
+
+        self.previous_units = units
+
+    def convert_value(self, value, units):
+        """
+        Converts a value to the specified unit system.
+
+        Args:
+            value (float): The value in the current unit system.
+            units (str): The target unit system, either "metric" or "imperial".
+
+        Returns:
+            float: The converted value in the target unit system.
+        """
+        if units == "metric":
+            return (25.4 * value)
+        elif units == "imperial":
+            return (value / 25.4)
+        else:
+            raise ValueError("Invalid unit system. Use 'metric' or 'imperial'.")
+
+    def toggle_button(self, button_id):
+        """
+        Toggle the visual state of the button.
+        Ensure only one button can be in the sunken (depressed) state.
+        """
+        # If a button is already selected, reset it to normal
+        if self.origin_position is not None:
+            prev_button = self.buttons[self.origin_position]
+            prev_button.config(relief="raised")
+
+        # Set the new button to sunken state
+        new_button = self.buttons[button_id]
+        new_button.config(relief="sunken")
+
+        # Update the currently selected button
+        self.origin_position = button_id
 
     def get_widget_value(self, key):
         """
@@ -350,32 +363,24 @@ class ExportDialog(tk.Toplevel):
         if isinstance(var, (tk.StringVar, tk.BooleanVar)):
             var.set(value)
 
-    def raise_save_as(self):
-        file_path = filedialog.asksaveasfilename(title="Select Output Location",
-                                                 defaultextension=self.defaultextension, 
-                                                 filetypes=self.filetypes,
-                                                 initialdir=os.getcwd())
+    def close(self, event=None):
+        """Return focus to the parent window and close."""
+        if self.parent is not None:
+            self.parent.focus_set()
+        tk.Toplevel.destroy(self)
 
-        if file_path:
-            self.export_button.configure(state='normal')
-            self.out_location_var.set(file_path)
-            self.file_path = file_path
-
-    def export(self, event=None):
-        """Gather dialog settings and close window. Overload in subclass if necessary."""
-        self.settings = {"file_path": self.file_path} | self.get_widget_values()  # concatenate dicts
+    def apply(self, event=None):
+        """Gather dialog settings and close window."""
+        self.settings = {}
+        for key in self.widgets.keys():
+            self.settings[key] = self.get_widget_value(key)
+        self.settings['origin_position'] = self.origin_position
         self.close()
 
     def cancel(self, event=None):
         """Clear dialog settings and close."""
         self.settings = {}
         self.close()
-
-    def close(self, event=None):
-        """Return focus to the parent window and close."""
-        if self.parent is not None:
-            self.parent.focus_set()
-        tk.Toplevel.destroy(self)
 
     def get_settings(self):
         """Return the current state of the dialog widgets."""
@@ -395,7 +400,8 @@ class DemoApp(tk.Tk):
 
     def open_dialog(self):
         # Raise an instance of the dialog.
-        ExportDialog(self)
+        d = WorkSettingsDialog(self)
+        print(d.get_settings())
 
 
 # Run the application
