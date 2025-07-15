@@ -87,7 +87,7 @@ class RouletteSettings(tk.Frame):
             data['r'] = float(self.widgets[2].get())
             data['s'] = {"Inside": -1, "Outside": 1}.get(self.widgets[3].get())  # translate string from combo to number
             data['d'] = float(self.widgets[4].get())
-            data['display res'] = 200
+            data['display res'] = 1000
 
         return data
 

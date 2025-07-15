@@ -24,6 +24,7 @@ class SpiroScribeApp(tk.Tk):
 
         self.origin_position = (1, 1)
         self.workspace_dims = (32, 32)
+        self.canvas_dims = (400, 400)
         self.workspace_units = "metric"
 
         self.frame = tk.Frame(self)
@@ -59,13 +60,13 @@ class SpiroScribeApp(tk.Tk):
 
         self.canvas = PreviewCanvas(
             parent=self.frame,
-            width=400,
-            height=400,
-            mm_to_px_ratio=15,
+            width=self.canvas_dims[0],
+            height=self.canvas_dims[1],
+            mm_to_px_ratio=self.canvas_dims[0] / float(self.workspace_dims[0]),
         )
         self.canvas.grid(row=1, column=0, padx=(5, 5), pady=(0, 0))
 
-        self.status_bar = StatusBar(self.frame, self.canvas, width_mm=32, height_mm=32, width_px=400)
+        self.status_bar = StatusBar(self.frame, self.canvas, width_mm=32, width_px=400)
         self.status_bar.grid(row=2, column=0, padx=(6, 6), sticky="ew")
 
         self.user_controls = UserControlsPane(self.frame)
@@ -172,20 +173,32 @@ class SpiroScribeApp(tk.Tk):
 
     def open_settings_dialog(self):
         # Pass in initial values for the dialog
-        dialog = WorkSettingsDialog(self)
+        dialog = WorkSettingsDialog(parent=self,
+                                    workspace_size=self.workspace_dims[1],
+                                    workspace_units=self.workspace_units,
+                                    background_color=self.canvas.bg_color,
+                                    show_origin=self.canvas.show_origin,
+                                    origin_position=self.canvas.origin_position)
 
-        # dialog = WorkSettingsDialog(self,
-        #                         initial_color=self.canvas.bg_color,
-        #                         show_origin=self.canvas.show_origin,
-        #                         origin_position=self.canvas.origin_position
-        #                         )
-        # settings = dialog.get_settings()
-        # self.origin_position = settings['origin_position']
-        # self.canvas.set_bg_color(settings['bg_color'])
-        # self.canvas.show_origin = settings['show_origin']
-        # self.canvas.origin_position = settings['origin_position']
-        # self.canvas.refresh_pattern()
-        # self.status_bar.origin_position = settings['origin_position']
+        # Get settings from dialog.
+        settings = dialog.get_settings()
+
+        # Apply settings if they exist.
+        if settings:
+            self.workspace_units = settings['workspace_units']
+            self.workspace_dims = (float(settings['workspace_size']), float(settings['workspace_size']))
+            self.origin_position = settings['origin_position']
+
+            # Update canvas.
+            self.canvas.set_ratio(float(settings['workspace_size']))
+            self.canvas.origin_position = settings['origin_position']
+            self.canvas.show_origin = settings['show_origin']
+            self.canvas.set_bg_color(settings['background_color'])
+            self.canvas.refresh_pattern()
+
+            # Update status bar.
+            self.status_bar.origin_position = settings['origin_position']
+            self.status_bar.update_workspace_size(self.workspace_dims[1])
 
     def open_info_dialog(self):
         text_list = [

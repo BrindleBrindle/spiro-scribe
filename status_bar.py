@@ -2,15 +2,15 @@ import tkinter as tk
 
 
 class StatusBar(tk.Frame):
-    def __init__(self, parent, canvas, width_mm=32, height_mm=32, width_px=400, *args, **kwargs):
+    def __init__(self, parent, canvas, width_mm=32, width_px=400, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
 
-        # Configurable workspace dimensions (in mm)
-        self.workspace_width = width_mm
-        self.workspace_height = height_mm
+        # Configurable workspace dimensions
+        self.width_mm = width_mm
+        self.height_mm = width_mm
         self.width_px = width_px
         self.height_px = width_px
-        self.pixels_to_mm = self.workspace_width / float(width_px)
+        self.pixels_to_mm = self.width_mm / float(self.width_px)
 
         # Create a main content area (just a blank area for cursor tracking)
         self.canvas = canvas
@@ -27,7 +27,7 @@ class StatusBar(tk.Frame):
         # Left-aligned workspace label
         self.workspace_label = tk.Label(
             self,
-            text=f"{self.workspace_width}mm (W) x {self.workspace_height}mm (H)",
+            text=f"{self.width_mm}mm (W) x {self.height_mm}mm (H)",
             fg="black",
             anchor="w"
         )
@@ -54,6 +54,12 @@ class StatusBar(tk.Frame):
                 (2, 1): (1, -1, -self.width_px / 2.0, self.height_px),          # bottom-middle
                 (2, 2): (1, -1, -self.width_px, self.height_px)                 # bottom-right
                 }
+
+    def update_workspace_size(self, workspace_size):
+        """Update the workspace size in mm."""
+        self.width_mm = workspace_size
+        self.height_mm = workspace_size
+        self.pixels_to_mm = self.width_mm / float(self.width_px)
 
     def update_cursor_position(self, event):
         """Update the cursor position label with current mouse coordinates."""
@@ -82,7 +88,7 @@ class StatusBar(tk.Frame):
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Status Bar Example")
-    root.geometry("400x300")  # Set a default window size
+    root.geometry("400x300")  # set a default window size
     root.grid_columnconfigure(0, weight=1)
     root.grid_rowconfigure(0, weight=1)
 

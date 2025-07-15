@@ -54,6 +54,9 @@ class PreviewCanvas(tk.Canvas):
             return
         self.pattern_linewidth = width
 
+    def set_ratio(self, workspace_size_mm):
+        self._mm_to_px_ratio = self._width / float(workspace_size_mm)
+
     def is_pattern_empty(self, lst):
         """
         Determines if the pattern list is 'empty'. The list is considered empty if:
@@ -345,6 +348,15 @@ class PreviewCanvas(tk.Canvas):
         self._height = value
         self._set_origin_center()
         self.config(width=self._height)
+
+    # @property
+    # def mm_to_px_ratio(self):
+    #     return self._mm_to_px_ratio
+
+    # @mm_to_px_ratio.setter
+    # def mm_to_px_ratio(self, value):
+    #     # TODO: Add acceptance conditions here.
+    #     self._mm_to_px_ratio = value
 
 
 # Main application demonstrating how to embed the class in an application.

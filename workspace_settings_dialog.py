@@ -6,7 +6,7 @@ import entry_validation as ev
 
 
 class WorkSettingsDialog(tk.Toplevel):
-    def __init__(self, parent, *args, **kwargs):
+    def __init__(self, parent, workspace_size, workspace_units, background_color, show_origin, origin_position, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
 
         self.parent = parent
@@ -16,13 +16,11 @@ class WorkSettingsDialog(tk.Toplevel):
         self.dialog_title = "Workspace Settings"
         self.content_frame_title = "User Settings"
 
-        self.defaults = {'workspace_size': 32,
-                         'workspace_units': 'metric',
-                         'background_color': '#FFFF80',
-                         'show_origin': True,
-                         'origin_position': (1, 1)}
+        self.selected_units = workspace_units
+        self.previous_units = self.selected_units
+        self.origin_position = origin_position
 
-        self.origin_position = self.defaults['origin_position']
+        # self.origin_position = self.defaults['origin_position']
 
         # Create a frame for the main widgets.
         self.main_frame = tk.Frame(self)
@@ -44,7 +42,7 @@ class WorkSettingsDialog(tk.Toplevel):
             left_label_text="Workspace Units",
             widget_type="radiobutton",
             widget_options={
-                "default": self.defaults['workspace_units'],
+                "default": workspace_units,
                 "options": [("imperial", "in", self.on_units_selected), ("metric", "mm", self.on_units_selected)]  # (value, label, command)
             },
             right_label_text="",
@@ -58,12 +56,12 @@ class WorkSettingsDialog(tk.Toplevel):
             left_label_text="Workspace Size",
             widget_type="entry",
             widget_options={
-                "default": self.defaults['workspace_size'],
+                "default": workspace_size,
                 "width": 8,
                 "validate": "key",
                 "validatecommand": (validate_float_pos_cmd, "%P"),
             },
-            right_label_text={"imperial": '[in]', "metric": '[mm]'}[self.defaults['workspace_units']]
+            right_label_text={"imperial": '[in]', "metric": '[mm]'}[workspace_units]
         )
 
         # Row 2: Background Color
@@ -74,7 +72,7 @@ class WorkSettingsDialog(tk.Toplevel):
             left_label_text="Background Color",
             widget_type="colorpicker",
             widget_options={
-                "default": self.defaults['background_color']
+                "default": background_color
             },
             right_label_text="",
         )
@@ -87,7 +85,7 @@ class WorkSettingsDialog(tk.Toplevel):
             left_label_text="Show Origin",
             widget_type="checkbutton",
             widget_options={
-                "default": self.defaults['show_origin']
+                "default": show_origin
             },
             right_label_text="",
         )
@@ -104,10 +102,6 @@ class WorkSettingsDialog(tk.Toplevel):
         self.apply_button = tk.Button(self.main_frame, text="Apply", command=self.apply)
         self.apply_button.grid(row=1, column=1, padx=5, pady=(5, 15), sticky="nse")
         self.bind("<Return>", self.apply)
-
-        # Set selected units
-        self.selected_units = self.get_widget_value('workspace_units')
-        self.previous_units = self.selected_units
 
         # Configure window properties.
         self.title(self.dialog_title)
@@ -264,7 +258,7 @@ class WorkSettingsDialog(tk.Toplevel):
                     font=("Arial", 10),
                     width=2,
                     height=1,
-                    relief="sunken" if (i, j) == self.defaults['origin_position'] else "raised",  # preselect button
+                    relief="sunken" if (i, j) == self.origin_position else "raised",  # preselect button
                     command=lambda b=(i, j): self.toggle_button(b)  # pass button position
                 )
                 button.grid(row=i, column=j, padx=2, pady=2)
@@ -399,8 +393,14 @@ class DemoApp(tk.Tk):
         open_dialog_button.pack(pady=50)
 
     def open_dialog(self):
-        # Raise an instance of the dialog.
-        d = WorkSettingsDialog(self)
+        # Raise an example instance of the dialog.
+        d = WorkSettingsDialog(parent=self,
+                               workspace_size=1.25,
+                               workspace_units='imperial',
+                               background_color='#FFFF80',
+                               show_origin=True,
+                               origin_position=(1, 1))
+
         print(d.get_settings())
 
 
