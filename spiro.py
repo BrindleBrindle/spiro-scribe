@@ -22,6 +22,13 @@ class SpiroScribeApp(tk.Tk):
         self.title("SpiroScribe")
         self.resizable(False, False)  # prevent resizing (width and height)
 
+        # Set top-left corner icon
+        cwd = os.getcwd()
+        flower_image = Image.open(cwd + "\\images\\" + "noun-flower.png")
+        resized_flower_image = flower_image.resize((16, 16), Image.LANCZOS)  # resize to fit title bar
+        flower_title_image = ImageTk.PhotoImage(resized_flower_image)
+        self.iconphoto(True, flower_title_image)  # set the scaled image as the window icon
+
         self.origin_position = (1, 1)
         self.workspace_dims = (32, 32)
         self.canvas_dims = (400, 400)

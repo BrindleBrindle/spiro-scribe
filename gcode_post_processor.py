@@ -174,19 +174,18 @@ class GCodePostProcessor:
                 # Add a comment with the number of the current circle.
                 self.add_comment(f"------ Circle {j + 1} of {n[i]} ------", indent_amount=2)
 
+                R = D[i] / 2.0
                 r = d[i] / 2.0
-                cx = (D[i] / 2.0) * np.cos(j)
-                cy = (D[i] / 2.0) * np.sin(j)
 
-                # Calculate starting/ending point (left edge of the circle).
-                start_x = cx - r
-                start_y = cy
+                # Calculate starting/ending point (point nearest to center of pattern).
+                start_x = (R - r) * np.cos(angles[j])
+                start_y = (R - r) * np.sin(angles[j])
                 start_x_offset = start_x + offset_x  # to account for origin location
                 start_y_offset = start_y + offset_y  # to account for origin location
 
                 # Calculate center offsets relative to the starting point.
-                i_offset = r  # radius units to the right of starting point
-                j_offset = 0.0  # vertically aligned with starting point
+                i_offset = r * np.cos(angles[j])
+                j_offset = r * np.sin(angles[j])
 
                 # For each pass
                 for p in range(1, num_passes + 1):

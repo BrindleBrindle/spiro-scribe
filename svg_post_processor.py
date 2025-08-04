@@ -190,7 +190,7 @@ class SVGPostProcessor:
 
             doc_string = (f'<svg width="{self.svg_width}" height="{height}" viewBox="0 0 {self.workspace_width} {viewbox_height}" xmlns="http://www.w3.org/2000/svg" version="1.1">\n\n'
                           f'\t<!-- Background -->\n'
-                          f'\t<rect x="0" y="0" width="{self.workspace_width}" height="{self.workspace_height}" fill="whitesmoke"/>\n\n'
+                          f'\t<rect x="0" y="0" width="{self.workspace_width}" height="{self.workspace_height}" fill="{self.background_color}"/>\n\n'
                           f'\t<!-- Pattern -->\n'
                           f'{self.pattern_svg}'
                           f'{parameters_svg}'
